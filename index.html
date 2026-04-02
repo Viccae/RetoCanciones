@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendario Musical</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #121212;
+      color: white;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .day {
+      background: #1e1e1e;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .day:hover {
+      background: #333;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+    }
+
+    input, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      background: #1db954;
+      color: white;
+      cursor: pointer;
+    }
+
+    iframe {
+      margin-top: 15px;
+      width: 100%;
+      height: 80px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Calendario Musical</h1>
+
+<div class="grid" id="calendar"></div>
+
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h2 id="dayTitle"></h2>
+
+    <input type="text" id="username" placeholder="Tu nombre">
+    <input type="text" id="spotifyLink" placeholder="Enlace de Spotify">
+
+    <button onclick="saveSong()">Guardar</button>
+
+    <div id="result"></div>
+  </div>
+</div>
+
+<script>
+  const calendar = document.getElementById('calendar');
+  const modal = document.getElementById('modal');
+  const dayTitle = document.getElementById('dayTitle');
+
+  let currentDay = null;
+
+  // Crear 30 días
+  for (let i = 1; i <= 30; i++) {
+    const day = document.createElement('div');
+    day.className = 'day';
+    day.innerText = 'Día ' + i;
+    day.onclick = () => openModal(i);
+    calendar.appendChild(day);
+  }
+
+  function openModal(day) {
+    currentDay = day;
+    dayTitle.innerText = 'Día ' + day;
+    modal.style.display = 'flex';
+
+    loadSong();
+  }
+
+  function closeModal() {
+    modal.style.display = 'none';
+  }
+
+  window.onclick = function(e) {
+    if (e.target === modal) {
+      closeModal();
+    }
+  }
+
+  function saveSong() {
+    const name = document.getElementById('username').value;
+    const link = document.getElementById('spotifyLink').value;
+
+    if (!name || !link) {
+      alert('Completa todos los campos');
+      return;
+    }
+
+    const embedLink = link.replace('open.spotify.com', 'open.spotify.com/embed');
+
+    const data = {
+      name,
+      link: embedLink
+    };
+
+    localStorage.setItem('day_' + currentDay, JSON.stringify(data));
+
+    loadSong();
+  }
+
+  function loadSong() {
+    const result = document.getElementById('result');
+    result.innerHTML = '';
+
+    const data = localStorage.getItem('day_' + currentDay);
+
+    if (data) {
+      const parsed = JSON.parse(data);
+
+      result.innerHTML = `
+        <p><strong>${parsed.name}</strong> eligió:</p>
+        <iframe src="${parsed.link}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+      `;
+    }
+  }
+</script>
+
+</body>
+</html>
