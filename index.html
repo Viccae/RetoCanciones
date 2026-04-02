@@ -10,72 +10,50 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: #121212;
-      color: white;
-    }
-
-    h1 { text-align: center; }
+    body { font-family: Arial; background:#121212; color:white; padding:20px; }
+    h1 { text-align:center; }
 
     .grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-      max-width: 800px;
-      margin: 0 auto;
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:10px;
+      max-width:800px;
+      margin:0 auto;
     }
 
     .day {
-      background: #1e1e1e;
-      border-radius: 10px;
-      padding: 20px;
-      text-align: center;
-      cursor: pointer;
+      background:#1e1e1e;
+      padding:20px;
+      border-radius:10px;
+      text-align:center;
+      cursor:pointer;
     }
 
     .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      display: none;
-      justify-content: center;
-      align-items: center;
+      position:fixed;
+      top:0; left:0;
+      width:100%; height:100%;
+      background:rgba(0,0,0,0.8);
+      display:none;
+      justify-content:center;
+      align-items:center;
     }
 
     .modal-content {
-      background: #222;
-      padding: 20px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 500px;
+      background:#222;
+      padding:20px;
+      border-radius:10px;
+      width:90%; max-width:500px;
     }
 
     input, button {
-      width: 100%;
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 5px;
-      border: none;
+      width:100%; margin-top:10px; padding:10px;
+      border-radius:5px; border:none;
     }
 
-    button {
-      background: #1db954;
-      color: white;
-      cursor: pointer;
-    }
+    button { background:#1db954; color:white; cursor:pointer; }
 
-    iframe {
-      margin-top: 15px;
-      width: 100%;
-      height: 80px;
-      border: none;
-    }
+    iframe { width:100%; height:80px; margin-top:10px; }
   </style>
 </head>
 <body>
@@ -87,8 +65,9 @@
   <div class="modal-content">
     <h2 id="dayTitle"></h2>
 
-    <input type="text" id="username" placeholder="Tu nombre">
-    <input type="text" id="spotifyLink" placeholder="Enlace de Spotify">
+    <input type="text" id="username" placeholder="Nombre">
+    <input type="password" id="password" placeholder="Contraseña">
+    <input type="text" id="spotifyLink" placeholder="Enlace Spotify">
 
     <button onclick="saveSong()">Guardar</button>
 
@@ -97,11 +76,10 @@
 </div>
 
 <script>
-  // 🔥 CONFIGURAR FIREBASE
   const firebaseConfig = {
-    apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
-    authDomain: "retocanciones.firebaseapp.com",
-    projectId: "retocanciones",
+  apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
+  authDomain: "retocanciones.firebaseapp.com",
+  projectId: "retocanciones",
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -113,7 +91,6 @@
 
   let currentDay = null;
 
-  // Crear días
   for (let i = 1; i <= 30; i++) {
     const day = document.createElement('div');
     day.className = 'day';
@@ -129,25 +106,54 @@
     loadSong();
   }
 
-  window.onclick = function(e) {
-    if (e.target === modal) modal.style.display = 'none';
-  }
+  window.onclick = e => { if (e.target === modal) modal.style.display='none'; };
 
   async function saveSong() {
-    const name = document.getElementById('username').value;
-    const link = document.getElementById('spotifyLink').value;
+    const name = document.getElementById('username').value.trim();
+    const pass = document.getElementById('password').value.trim();
+    const link = document.getElementById('spotifyLink').value.trim();
 
-    if (!name || !link) {
+    if (!name || !pass || !link) {
       alert('Completa todos los campos');
       return;
     }
 
-    const embedLink = link.replace('open.spotify.com', 'open.spotify.com/embed');
+    const embedLink = link.replace('open.spotify.com','open.spotify.com/embed');
 
-    await db.collection('calendar').doc('day_' + currentDay).set({
-      name,
-      link: embedLink
-    });
+    // 🔐 Validar usuario
+    const userRef = db.collection('users').doc(name);
+    const userDoc = await userRef.get();
+
+    if (userDoc.exists) {
+      if (userDoc.data().password !== pass) {
+        alert('Contraseña incorrecta');
+        return;
+      }
+    } else {
+      // crear usuario
+      await userRef.set({ password: pass });
+    }
+
+    const docRef = db.collection('calendar').doc('day_' + currentDay);
+    const doc = await docRef.get();
+
+    let songs = [];
+    if (doc.exists) songs = doc.data().songs || [];
+
+    // 🚫 evitar duplicado por nombre
+    if (songs.some(s => s.name === name)) {
+      alert('Ya has añadido canción en este día');
+      return;
+    }
+
+    if (songs.length >= 2) {
+      alert('Este día ya tiene 2 canciones');
+      return;
+    }
+
+    songs.push({ name, link: embedLink });
+
+    await docRef.set({ songs });
 
     loadSong();
   }
@@ -158,16 +164,26 @@
 
     const doc = await db.collection('calendar').doc('day_' + currentDay).get();
 
-    if (doc.exists) {
-      const data = doc.data();
-
-      result.innerHTML = `
-        <p><strong>${data.name}</strong> eligió:</p>
-        <iframe src="${data.link}" allow="autoplay; encrypted-media"></iframe>
-      `;
-    } else {
+    if (!doc.exists) {
       result.innerHTML = '<p>Nadie ha añadido canción aún</p>';
+      return;
     }
+
+    const songs = doc.data().songs || [];
+
+    if (songs.length === 0) {
+      result.innerHTML = '<p>Nadie ha añadido canción aún</p>';
+      return;
+    }
+
+    result.innerHTML = '';
+
+    songs.forEach(song => {
+      result.innerHTML += `
+        <p><strong>${song.name}</strong> eligió:</p>
+        <iframe src="${song.link}"></iframe>
+      `;
+    });
   }
 </script>
 
