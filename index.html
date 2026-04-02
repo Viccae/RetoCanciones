@@ -91,19 +91,51 @@
 
   let currentDay = null;
 
+  // 🗓️ Configuración de calendario
+  const today = new Date();
+  const currentDayOfMonth = today.getDate();
+
+  // ✏️ Textos personalizados por día
+  const dayMessages = {
+    1: "Empieza el mes con música 🎵",
+    2: "Segundo día, segunda joya",
+    3: "Día 3: algo especial",
+    4: "Hoy se desbloquea buena música",
+    5: "Mitad de semana vibes",
+    // puedes seguir hasta 30
+  };
+
   for (let i = 1; i <= 30; i++) {
     const day = document.createElement('div');
     day.className = 'day';
-    day.innerText = 'Día ' + i;
-    day.onclick = () => openModal(i);
+    day.id = 'day_' + i;
+
+    if (i > currentDayOfMonth) {
+      day.innerText = 'Día ' + i + ' 🔒';
+      day.style.opacity = '0.5';
+      day.style.cursor = 'not-allowed';
+    } else {
+      day.innerText = 'Día ' + i + ' (0/2)';
+      day.onclick = () => openModal(i);
+      updateDayStatus(i);
+    }
+
     calendar.appendChild(day);
   }
 
   function openModal(day) {
+    // 🚫 Seguridad extra
+    if (day > currentDayOfMonth) return;
+
     currentDay = day;
-    dayTitle.innerText = 'Día ' + day;
+
+    // Mostrar mensaje personalizado
+    const message = dayMessages[day] || 'Día ' + day;
+    dayTitle.innerText = message;
+
     modal.style.display = 'flex';
     loadSong();
+    updateDayStatus(currentDay);
   }
 
   window.onclick = e => { if (e.target === modal) modal.style.display='none'; };
@@ -198,6 +230,30 @@
     await docRef.set({ songs });
 
     loadSong();
+    updateDayStatus(currentDay);
+  }
+
+  async function updateDayStatus(day) {
+    const dayEl = document.getElementById('day_' + day);
+
+    const doc = await db.collection('calendar').doc('day_' + day).get();
+
+    let count = 0;
+    if (doc.exists) {
+      const songs = doc.data().songs || [];
+      count = songs.length;
+    }
+
+    dayEl.innerText = `Día ${day} (${count}/2)`;
+
+    // 🎨 Colores por estado
+    if (count === 0) {
+      dayEl.style.background = '#1e1e1e'; // gris oscuro
+    } else if (count === 1) {
+      dayEl.style.background = '#b8860b'; // amarillo
+    } else if (count === 2) {
+      dayEl.style.background = '#1db954'; // verde Spotify
+    }
   }
 
   async function loadSong() {
