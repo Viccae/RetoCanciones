@@ -118,7 +118,44 @@
       return;
     }
 
-    const embedLink = link.replace('open.spotify.com','open.spotify.com/embed');
+    // 🔧 Convertir enlace de Spotify correctamente a formato embed
+    function convertToEmbed(link) {
+      try {
+        // 🔁 Si es enlace corto (spotify.link), intentar expandir
+        if (link.includes('spotify.link')) {
+          alert('Los enlaces cortos de móvil (spotify.link) no funcionan directamente. Abre el enlace en tu navegador y copia la URL completa.');
+          return null;
+        }
+
+        const url = new URL(link);
+
+        // Limpiar parámetros tipo ?si=
+        const cleanPath = url.pathname.split('?')[0];
+        const parts = cleanPath.split('/').filter(Boolean);
+
+        if (parts.length >= 2) {
+          const type = parts[0];
+          const id = parts[1];
+
+          if (!['track','album','playlist'].includes(type)) {
+            return null;
+          }
+
+          return `https://open.spotify.com/embed/${type}/${id}`;
+        }
+      } catch (e) {
+        return null;
+      }
+
+      return null;
+    }
+
+    const embedLink = convertToEmbed(link);
+
+    if (!embedLink) {
+      alert('Enlace de Spotify no válido');
+      return;
+    }
 
     // 🔐 Validar usuario
     const userRef = db.collection('users').doc(name);
