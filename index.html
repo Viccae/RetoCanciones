@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calendario Musical</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,9 +18,7 @@
       color: white;
     }
 
-    h1 {
-      text-align: center;
-    }
+    h1 { text-align: center; }
 
     .grid {
       display: grid;
@@ -31,11 +34,6 @@
       padding: 20px;
       text-align: center;
       cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .day:hover {
-      background: #333;
     }
 
     .modal {
@@ -83,7 +81,6 @@
 <body>
 
 <h1>Calendario Musical</h1>
-
 <div class="grid" id="calendar"></div>
 
 <div class="modal" id="modal">
@@ -100,13 +97,23 @@
 </div>
 
 <script>
+  // 🔥 CONFIGURAR FIREBASE
+  const firebaseConfig = {
+    apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
+    authDomain: "retocanciones.firebaseapp.com",
+    projectId: "retocanciones",
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
   const calendar = document.getElementById('calendar');
   const modal = document.getElementById('modal');
   const dayTitle = document.getElementById('dayTitle');
 
   let currentDay = null;
 
-  // Crear 30 días
+  // Crear días
   for (let i = 1; i <= 30; i++) {
     const day = document.createElement('div');
     day.className = 'day';
@@ -119,21 +126,14 @@
     currentDay = day;
     dayTitle.innerText = 'Día ' + day;
     modal.style.display = 'flex';
-
     loadSong();
   }
 
-  function closeModal() {
-    modal.style.display = 'none';
-  }
-
   window.onclick = function(e) {
-    if (e.target === modal) {
-      closeModal();
-    }
+    if (e.target === modal) modal.style.display = 'none';
   }
 
-  function saveSong() {
+  async function saveSong() {
     const name = document.getElementById('username').value;
     const link = document.getElementById('spotifyLink').value;
 
@@ -144,29 +144,29 @@
 
     const embedLink = link.replace('open.spotify.com', 'open.spotify.com/embed');
 
-    const data = {
+    await db.collection('calendar').doc('day_' + currentDay).set({
       name,
       link: embedLink
-    };
-
-    localStorage.setItem('day_' + currentDay, JSON.stringify(data));
+    });
 
     loadSong();
   }
 
-  function loadSong() {
+  async function loadSong() {
     const result = document.getElementById('result');
-    result.innerHTML = '';
+    result.innerHTML = 'Cargando...';
 
-    const data = localStorage.getItem('day_' + currentDay);
+    const doc = await db.collection('calendar').doc('day_' + currentDay).get();
 
-    if (data) {
-      const parsed = JSON.parse(data);
+    if (doc.exists) {
+      const data = doc.data();
 
       result.innerHTML = `
-        <p><strong>${parsed.name}</strong> eligió:</p>
-        <iframe src="${parsed.link}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+        <p><strong>${data.name}</strong> eligió:</p>
+        <iframe src="${data.link}" allow="autoplay; encrypted-media"></iframe>
       `;
+    } else {
+      result.innerHTML = '<p>Nadie ha añadido canción aún</p>';
     }
   }
 </script>
