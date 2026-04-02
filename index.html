@@ -120,35 +120,40 @@
 
     // 🔧 Convertir enlace de Spotify correctamente a formato embed
     function convertToEmbed(link) {
-      try {
-        // 🔁 Si es enlace corto (spotify.link), intentar expandir
-        if (link.includes('spotify.link')) {
-          alert('Los enlaces cortos de móvil (spotify.link) no funcionan directamente. Abre el enlace en tu navegador y copia la URL completa.');
-          return null;
-        }
+  try {
+    // 🔥 Extraer ID de Spotify de múltiples formatos
 
-        const url = new URL(link);
-
-        // Limpiar parámetros tipo ?si=
-        const cleanPath = url.pathname.split('?')[0];
-        const parts = cleanPath.split('/').filter(Boolean);
-
-        if (parts.length >= 2) {
-          const type = parts[0];
-          const id = parts[1];
-
-          if (!['track','album','playlist'].includes(type)) {
-            return null;
-          }
-
-          return `https://open.spotify.com/embed/${type}/${id}`;
-        }
-      } catch (e) {
-        return null;
+    // Caso 1: spotify:track:ID
+    if (link.startsWith('spotify:')) {
+      const parts = link.split(':');
+      if (parts.length === 3) {
+        const type = parts[1];
+        const id = parts[2];
+        return `https://open.spotify.com/embed/${type}/${id}`;
       }
+    }
 
+    // Caso 2: URL normal o con parámetros
+    const match = link.match(/(track|album|playlist)[\/|:]([a-zA-Z0-9]+)/);
+
+    if (match) {
+      const type = match[1];
+      const id = match[2];
+      return `https://open.spotify.com/embed/${type}/${id}`;
+    }
+
+    // Caso 3: enlaces cortos → no soportados
+    if (link.includes('spotify.link')) {
+      alert('Ese enlace es un link corto de Spotify. Ábrelo en el navegador y copia la URL completa.');
       return null;
     }
+
+  } catch (e) {
+    return null;
+  }
+
+  return null;
+}
 
     const embedLink = convertToEmbed(link);
 
