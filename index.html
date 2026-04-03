@@ -94,8 +94,8 @@ for(let i=1; i<=30; i++){
   div.className = 'day';
   div.id = 'day_'+i;
 
-  // Contenido inicial visible
-  div.innerHTML = `<div>Día ${i}</div><div class="avatars">⌛ ⌛</div>`;
+  // Contenido inicial: siempre un reloj de arena
+  div.innerHTML = `<div style="text-align:center; font-size:24px;">⌛</div>`;
 
   // Días disponibles
   if(i <= today){
@@ -186,6 +186,14 @@ async function updateDayStatus(day){
   const doc = await db.collection('calendar').doc('day_'+day).get();
   const songs = doc.exists ? doc.data().songs || [] : [];
 
+  // Si el día está bloqueado
+  if(day > today){
+    el.classList.add('locked');
+    el.innerHTML = `<div style="text-align:center; font-size:24px;">⌛</div>`;
+    return;
+  }
+
+  // Día disponible: mostrar mensaje y avatares
   const msg = dayMessages[day] || ('Día ' + day);
   let html = `<div>${msg}</div><div class="avatars">`;
 
@@ -195,13 +203,8 @@ async function updateDayStatus(day){
   });
 
   html += '</div>';
-
-  if(day > today){
-    el.classList.add('locked');
-    html = `<div>Día ${day} 🔒</div>` + html;
-  }
-
   el.innerHTML = html;
+}
 }
 </script>
 
