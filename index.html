@@ -48,6 +48,14 @@ const today=new Date().getDate();
 
 const allowedUsers={"Carlo":"🧑‍🎧","Sara":"🎸"};
 
+const dayMessages = {
+  1: "Empieza fuerte 🎵",
+  2: "Otra joya",
+  3: "Día especial",
+  4: "Descubre algo nuevo",
+  5: "Mitad de vibes"
+};
+
 let currentDay=null;
 let currentUser=null;
 
@@ -61,7 +69,9 @@ for(let i=1;i<=30;i++){
     div.innerText='Día '+i+' 🔒';
     div.classList.add('locked');
   } else {
-    div.innerText='Día '+i;
+    div.innerHTML = `
+   <div>Día ${i}</div>
+   <div class="avatars">⌛ ⌛</div>`;
     div.onclick=()=>openModal(i);
     updateDayStatus(i);
   }
@@ -71,7 +81,8 @@ for(let i=1;i<=30;i++){
 
 function openModal(day){
   currentDay=day;
-  document.getElementById('dayTitle').innerText='Día '+day;
+  document.getElementById('dayTitle').innerText =
+  dayMessages[day] || ('Día ' + day);
   modal.style.display='flex';
   loadSong();
 }
