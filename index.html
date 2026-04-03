@@ -115,7 +115,10 @@
       day.style.opacity = '0.5';
       day.style.cursor = 'not-allowed';
     } else {
-      day.innerText = 'Día ' + i + ' (0/2)';
+      // ✅ Mostrar mensaje personalizado directamente en la casilla
+      const message = dayMessages[i] || ('Día ' + i);
+      day.innerText = message;
+
       day.onclick = () => openModal(i);
       updateDayStatus(i);
     }
@@ -244,7 +247,8 @@
       count = songs.length;
     }
 
-    dayEl.innerText = `Día ${day} (${count}/2)`;
+    const message = dayMessages[day] || ('Día ' + day);
+    dayEl.innerText = `${message} (${count}/2)`;
 
     // 🎨 Colores por estado
     if (count === 0) {
