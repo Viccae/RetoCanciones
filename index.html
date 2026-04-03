@@ -103,10 +103,9 @@ iframe { width:100%; margin-top:10px; }
 </div>
 
 <script>
-const firebaseConfig = { 
-  apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
+const firebaseConfig = { apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
   authDomain: "retocanciones.firebaseapp.com",
-  projectId: "retocanciones", };
+  projectId: "retocanciones",};
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -136,9 +135,14 @@ for (let i=1;i<=30;i++){
     d.innerText='Día '+i+' 🔒';
     d.classList.add('locked');
   } else {
+    // 🔧 IMPORTANTE: poner contenido inicial para que sea visible
+    const msg = dayMessages[i] || ('Día '+i);
+    d.innerHTML = `<div>${msg}</div><div class="avatars">⌛ ⌛</div>`;
+
     d.onclick=()=>openModal(i);
     updateDayStatus(i);
   }
+
   calendar.appendChild(d);
 }
 
@@ -159,9 +163,9 @@ function convert(link){
 }
 
 async function saveSong(){
-  const name=username.value.trim();
-  const pass=password.value.trim();
-  const link=spotifyLink.value.trim();
+  const name=document.getElementById('username').value.trim();
+  const pass=document.getElementById('password').value.trim();
+  const link=document.getElementById('spotifyLink').value.trim();
 
   if(!allowedUsers[name]) return alert('Usuario no permitido');
 
@@ -175,6 +179,21 @@ async function saveSong(){
 
   if(u.exists && u.data().password!==pass) return alert('Contraseña incorrecta');
   if(!u.exists) await userRef.set({password:pass});
+
+  const ref=db.collection('calendar').doc('day_'+currentDay);
+  const doc=await ref.get();
+
+  let songs=doc.exists?doc.data().songs||[]:[];
+
+  if(songs.some(s=>s.name===name)) return alert('Ya enviaste');
+  if(songs.length>=2) return alert('Completo');
+
+  songs.push({name,link:embed});
+  await ref.set({songs});
+
+  loadSong();
+  updateDayStatus(currentDay);
+});
 
   const ref=db.collection('calendar').doc('day_'+currentDay);
   const doc=await ref.get();
