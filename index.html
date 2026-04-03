@@ -11,11 +11,12 @@
 <style>
 body {font-family: Arial; background:#121212; color:white; padding:20px;}
 .grid {display:grid; grid-template-columns:repeat(5,1fr); gap:10px;}
-.day {background:#1e1e1e; padding:15px; border-radius:10px; min-height:100px;}
-.locked {opacity:0.4;}
-.avatars {margin-top:10px;}
+.day {background:#1e1e1e; padding:15px; border-radius:10px; min-height:100px; cursor:pointer; transition:0.2s;}
+.day.locked {opacity:0.4; cursor:default;}
+.avatars {margin-top:10px; font-size:18px;}
 .modal {position:fixed; inset:0; display:none; background:rgba(0,0,0,0.8); justify-content:center; align-items:center;}
 .modal-content {background:#222; padding:20px; border-radius:10px; width:90%; max-width:500px;}
+iframe {width:100%; height:80px; border:none; margin-top:5px;}
 </style>
 </head>
 <body>
@@ -38,132 +39,169 @@ body {font-family: Arial; background:#121212; color:white; padding:20px;}
 const firebaseConfig = {
   apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
   authDomain: "retocanciones.firebaseapp.com",
-  projectId: "retocanciones",};
+  projectId: "retocanciones",
+};
 firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
+const db = firebase.firestore();
 
-const calendar=document.getElementById('calendar');
-const modal=document.getElementById('modal');
-const today=new Date().getDate();
+const calendar = document.getElementById('calendar');
+const modal = document.getElementById('modal');
+const today = new Date().getDate();
 
-const allowedUsers={"Carlo":"🧑‍🎧","Sara":"🎸"};
+// Usuarios y sus avatares
+const allowedUsers = {"Carlo":"🧑‍🎧","Sara":"🎸"};
 
+// Mensajes personalizados de cada día
 const dayMessages = {
   1: "Empieza fuerte 🎵",
   2: "Otra joya",
   3: "Día especial",
   4: "Descubre algo nuevo",
-  5: "Mitad de vibes"
+  5: "Mitad de vibes",
+  6: "Música sorpresa",
+  7: "Vibras de lunes",
+  8: "Un clásico",
+  9: "Tema inesperado",
+  10: "Ritmo intenso",
+  11: "Día chill",
+  12: "Hit del momento",
+  13: "Melodía suave",
+  14: "Subidón musical",
+  15: "Mitad de mes",
+  16: "Retro vibes",
+  17: "Día relajante",
+  18: "Algo épico",
+  19: "Casi fin de mes",
+  20: "Sorpresa sonora",
+  21: "Tema divertido",
+  22: "Hit retro",
+  23: "Día movido",
+  24: "Cierre de semana",
+  25: "Día especial",
+  26: "Mood tranquilo",
+  27: "Ritmo intenso",
+  28: "Casi final",
+  29: "Sorpresa final",
+  30: "Gran cierre 🎉"
 };
 
-let currentDay=null;
-let currentUser=null;
+let currentDay = null;
+let currentUser = null;
 
 // CREAR GRID
-for(let i=1;i<=30;i++){
-  const div=document.createElement('div');
-  div.className='day';
-  div.id='day_'+i;
+for(let i=1; i<=30; i++){
+  const div = document.createElement('div');
+  div.className = 'day';
+  div.id = 'day_'+i;
 
-  if(i>today){
-    div.innerText='Día '+i+' 🔒';
-    div.classList.add('locked');
+  // Contenido inicial visible
+  div.innerHTML = `<div>Día ${i}</div><div class="avatars">⌛ ⌛</div>`;
+
+  // Días disponibles
+  if(i <= today){
+    div.onclick = () => openModal(i);
   } else {
-    div.innerHTML = `
-   <div>Día ${i}</div>
-   <div class="avatars">⌛ ⌛</div>`;
-    div.onclick=()=>openModal(i);
-    updateDayStatus(i);
+    div.classList.add('locked');
   }
 
   calendar.appendChild(div);
+  updateDayStatus(i);
 }
 
+// Abrir modal
 function openModal(day){
-  currentDay=day;
-  document.getElementById('dayTitle').innerText =
-  dayMessages[day] || ('Día ' + day);
-  modal.style.display='flex';
+  currentDay = day;
+  document.getElementById('dayTitle').innerText = dayMessages[day] || ('Día '+day);
+  modal.style.display = 'flex';
   loadSong();
 }
 
-window.onclick=e=>{if(e.target===modal) modal.style.display='none';}
+// Cerrar modal al click fuera
+window.onclick = e => { if(e.target===modal) modal.style.display='none'; }
 
+// Convertir link de Spotify a embed
 function convert(link){
-  const m=link.match(/(track|album|playlist)[\/|:]([a-zA-Z0-9]+)/);
+  const m = link.match(/(track|album|playlist)[\/|:]([a-zA-Z0-9]+)/);
   if(m) return `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
   return null;
 }
 
+// Guardar canción
 async function saveSong(){
-  const name=document.getElementById('username').value.trim();
-  const pass=document.getElementById('password').value.trim();
-  const link=document.getElementById('spotifyLink').value.trim();
+  const name = document.getElementById('username').value.trim();
+  const pass = document.getElementById('password').value.trim();
+  const link = document.getElementById('spotifyLink').value.trim();
 
   if(!allowedUsers[name]) return alert('Usuario no permitido');
 
-  currentUser=name;
+  currentUser = name;
 
-  const embed=convert(link);
+  const embed = convert(link);
   if(!embed) return alert('Link inválido');
 
-  const userRef=db.collection('users').doc(name);
-  const u=await userRef.get();
+  const userRef = db.collection('users').doc(name);
+  const u = await userRef.get();
 
-  if(u.exists && u.data().password!==pass) return alert('Contraseña incorrecta');
-  if(!u.exists) await userRef.set({password:pass});
+  if(u.exists && u.data().password !== pass) return alert('Contraseña incorrecta');
+  if(!u.exists) await userRef.set({password: pass});
 
-  const ref=db.collection('calendar').doc('day_'+currentDay);
-  const doc=await ref.get();
+  const ref = db.collection('calendar').doc('day_'+currentDay);
+  const doc = await ref.get();
 
-  let songs=doc.exists?doc.data().songs||[]:[];
+  let songs = doc.exists ? doc.data().songs || [] : [];
 
-  if(songs.some(s=>s.name===name)) return alert('Ya enviaste');
-  if(songs.length>=2) return alert('Completo');
+  if(songs.some(s => s.name === name)) return alert('Ya enviaste');
+  if(songs.length >= 2) return alert('Completo');
 
-  songs.push({name,link:embed});
+  songs.push({name, link: embed});
   await ref.set({songs});
 
   loadSong();
   updateDayStatus(currentDay);
 }
 
+// Mostrar canciones en modal
 async function loadSong(){
-  const result=document.getElementById('result');
-  result.innerHTML='';
+  const result = document.getElementById('result');
+  result.innerHTML = '';
 
-  const doc=await db.collection('calendar').doc('day_'+currentDay).get();
+  const doc = await db.collection('calendar').doc('day_'+currentDay).get();
   if(!doc.exists) return result.innerHTML='Nada aún';
 
-  const songs=doc.data().songs||[];
-  const submitted=songs.some(s=>s.name===currentUser);
+  const songs = doc.data().songs || [];
+  const submitted = songs.some(s => s.name === currentUser);
 
-  songs.forEach(s=>{
-    if(submitted || s.name===currentUser){
-      result.innerHTML+=`<div><b>${s.name}</b><iframe src="${s.link}"></iframe></div>`;
+  songs.forEach(s => {
+    if(submitted || s.name === currentUser){
+      result.innerHTML += `<div><b>${s.name}</b><iframe src="${s.link}"></iframe></div>`;
     } else {
-      result.innerHTML+=`<div><b>${s.name}</b> 🔒</div>`;
+      result.innerHTML += `<div><b>${s.name}</b> 🔒</div>`;
     }
   });
 }
 
+// Actualizar visual de cada día
 async function updateDayStatus(day){
-  const el=document.getElementById('day_'+day);
-  const doc=await db.collection('calendar').doc('day_'+day).get();
-
-  let songs=doc.exists?doc.data().songs||[]:[];
+  const el = document.getElementById('day_'+day);
+  const doc = await db.collection('calendar').doc('day_'+day).get();
+  const songs = doc.exists ? doc.data().songs || [] : [];
 
   const msg = dayMessages[day] || ('Día ' + day);
   let html = `<div>${msg}</div><div class="avatars">`;
 
-  Object.keys(allowedUsers).forEach(u=>{
-    const has=songs.some(s=>s.name===u);
-    html+=allowedUsers[u] + (has?'✔️ ':'❌ ');
+  Object.keys(allowedUsers).forEach(u => {
+    const has = songs.some(s => s.name === u);
+    html += allowedUsers[u] + (has ? '✔️ ' : '❌ ');
   });
 
-  html+='</div>';
+  html += '</div>';
 
-  el.innerHTML=html;
+  if(day > today){
+    el.classList.add('locked');
+    html = `<div>Día ${day} 🔒</div>` + html;
+  }
+
+  el.innerHTML = html;
 }
 </script>
 
