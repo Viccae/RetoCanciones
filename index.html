@@ -9,86 +9,18 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <style>
-body {
-  font-family: 'Segoe UI', sans-serif;
-  margin: 0;
-  padding: 20px;
-  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-  color: white;
-}
-
-h1 { text-align:center; margin-bottom:30px; }
-
-.grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-  gap:15px;
-  max-width:1000px;
-  margin:auto;
-}
-
-.day {
-  border-radius:16px;
-  padding:15px;
-  text-align:center;
-  cursor:pointer;
-  transition:0.3s;
-  min-height:110px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-}
-
-.day:hover { transform:scale(1.03); }
-.locked { opacity:0.4; cursor:not-allowed; }
-.empty { background:#1e1e1e; }
-.partial { background:#d4a017; }
-.full { background:#1db954; }
-
-.avatars { display:flex; justify-content:center; gap:10px; margin-top:10px; }
-.avatar { font-size:20px; }
-
-.modal {
-  position:fixed; inset:0;
-  background:rgba(0,0,0,0.85);
-  display:none; justify-content:center; align-items:center;
-}
-
-.modal-content {
-  background:#1c1c1c;
-  padding:25px;
-  border-radius:16px;
-  width:90%; max-width:500px;
-  animation:pop 0.3s ease;
-}
-
-@keyframes pop {
-  from { transform:scale(0.8); opacity:0; }
-  to { transform:scale(1); opacity:1; }
-}
-
-.reveal {
-  animation:reveal 0.6s ease;
-}
-
-@keyframes reveal {
-  from { transform:rotateY(90deg); opacity:0; }
-  to { transform:rotateY(0); opacity:1; }
-}
-
-input,button {
-  width:100%; margin-top:10px; padding:10px;
-  border:none; border-radius:8px;
-}
-
-button { background:#1db954; color:white; }
-iframe { width:100%; margin-top:10px; }
-.song-block { margin-top:15px; }
+body {font-family: Arial; background:#121212; color:white; padding:20px;}
+.grid {display:grid; grid-template-columns:repeat(5,1fr); gap:10px;}
+.day {background:#1e1e1e; padding:15px; border-radius:10px; min-height:100px;}
+.locked {opacity:0.4;}
+.avatars {margin-top:10px;}
+.modal {position:fixed; inset:0; display:none; background:rgba(0,0,0,0.8); justify-content:center; align-items:center;}
+.modal-content {background:#222; padding:20px; border-radius:10px; width:90%; max-width:500px;}
 </style>
 </head>
 <body>
 
-<h1>🎵 Calendario Musical</h1>
+<h1>Calendario Musical</h1>
 <div class="grid" id="calendar"></div>
 
 <div class="modal" id="modal">
@@ -96,65 +28,55 @@ iframe { width:100%; margin-top:10px; }
 <h2 id="dayTitle"></h2>
 <input id="username" placeholder="Nombre">
 <input id="password" type="password" placeholder="Contraseña">
-<input id="spotifyLink" placeholder="Link Spotify">
+<input id="spotifyLink" placeholder="Spotify link">
 <button onclick="saveSong()">Guardar</button>
 <div id="result"></div>
 </div>
 </div>
 
 <script>
-const firebaseConfig = { apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
+const firebaseConfig = {
+  apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
   authDomain: "retocanciones.firebaseapp.com",
   projectId: "retocanciones",};
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db=firebase.firestore();
 
-const calendar = document.getElementById('calendar');
-const modal = document.getElementById('modal');
-const today = new Date().getDate();
+const calendar=document.getElementById('calendar');
+const modal=document.getElementById('modal');
+const today=new Date().getDate();
 
-// 👤 Define usuarios (puedes cambiar emojis)
-const allowedUsers = {
-  "User1": "🧑‍🎧",
-  "User2": "🎸"
-};
+const allowedUsers={"User1":"🧑‍🎧","User2":"🎸"};
 
-const dayMessages = {
-  1:"Empieza 🎵", 2:"Otra joya", 3:"Día especial"
-};
+let currentDay=null;
+let currentUser=null;
 
-let currentDay = null;
-let currentUser = null;
-
-for (let i=1;i<=30;i++){
-  const d=document.createElement('div');
-  d.className='day';
-  d.id='day_'+i;
+// CREAR GRID
+for(let i=1;i<=30;i++){
+  const div=document.createElement('div');
+  div.className='day';
+  div.id='day_'+i;
 
   if(i>today){
-    d.innerText='Día '+i+' 🔒';
-    d.classList.add('locked');
+    div.innerText='Día '+i+' 🔒';
+    div.classList.add('locked');
   } else {
-    // 🔧 IMPORTANTE: poner contenido inicial para que sea visible
-    const msg = dayMessages[i] || ('Día '+i);
-    d.innerHTML = `<div>${msg}</div><div class="avatars">⌛ ⌛</div>`;
-
-    d.onclick=()=>openModal(i);
+    div.innerText='Día '+i;
+    div.onclick=()=>openModal(i);
     updateDayStatus(i);
   }
 
-  calendar.appendChild(d);
+  calendar.appendChild(div);
 }
 
 function openModal(day){
   currentDay=day;
-  document.getElementById('dayTitle').innerText=dayMessages[day]||('Día '+day);
+  document.getElementById('dayTitle').innerText='Día '+day;
   modal.style.display='flex';
-  document.querySelector('.modal-content').classList.add('reveal');
   loadSong();
 }
 
-window.onclick=e=>{ if(e.target===modal) modal.style.display='none'; }
+window.onclick=e=>{if(e.target===modal) modal.style.display='none';}
 
 function convert(link){
   const m=link.match(/(track|album|playlist)[\/|:]([a-zA-Z0-9]+)/);
@@ -193,21 +115,6 @@ async function saveSong(){
 
   loadSong();
   updateDayStatus(currentDay);
-});
-
-  const ref=db.collection('calendar').doc('day_'+currentDay);
-  const doc=await ref.get();
-
-  let songs=doc.exists?doc.data().songs||[]:[];
-
-  if(songs.some(s=>s.name===name)) return alert('Ya enviaste');
-  if(songs.length>=2) return alert('Completo');
-
-  songs.push({name,link:embed});
-  await ref.set({songs});
-
-  loadSong();
-  updateDayStatus(currentDay);
 }
 
 async function loadSong(){
@@ -218,14 +125,13 @@ async function loadSong(){
   if(!doc.exists) return result.innerHTML='Nada aún';
 
   const songs=doc.data().songs||[];
-
-  const userSubmitted=songs.some(s=>s.name===currentUser);
+  const submitted=songs.some(s=>s.name===currentUser);
 
   songs.forEach(s=>{
-    if(userSubmitted || s.name===currentUser){
-      result.innerHTML+=`<div class="song-block"><b>${s.name}</b><iframe src="${s.link}"></iframe></div>`;
+    if(submitted || s.name===currentUser){
+      result.innerHTML+=`<div><b>${s.name}</b><iframe src="${s.link}"></iframe></div>`;
     } else {
-      result.innerHTML+=`<div class="song-block"><b>${s.name}</b> 🔒</div>`;
+      result.innerHTML+=`<div><b>${s.name}</b> 🔒</div>`;
     }
   });
 }
@@ -236,24 +142,16 @@ async function updateDayStatus(day){
 
   let songs=doc.exists?doc.data().songs||[]:[];
 
-  const msg=dayMessages[day]||('Día '+day);
-
-  let avatarsHTML='<div class="avatars">';
+  let html='Día '+day+'<div class="avatars">';
 
   Object.keys(allowedUsers).forEach(u=>{
     const has=songs.some(s=>s.name===u);
-    avatarsHTML+=`<span class="avatar">${allowedUsers[u]} ${has?'✔️':'❌'}</span>`;
+    html+=allowedUsers[u] + (has?'✔️ ':'❌ ');
   });
 
-  avatarsHTML+='</div>';
+  html+='</div>';
 
-  el.innerHTML=`<div>${msg}</div>${avatarsHTML}`;
-
-  el.classList.remove('empty','partial','full');
-
-  if(songs.length===0) el.classList.add('empty');
-  else if(songs.length===1) el.classList.add('partial');
-  else el.classList.add('full');
+  el.innerHTML=html;
 }
 </script>
 
