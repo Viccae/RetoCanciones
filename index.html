@@ -126,20 +126,23 @@ const dayMessages = {
 let currentDay = null;
 let currentUser = null;
 
-for (let i=1;i<=30;i++){
-  const d=document.createElement('div');
-  d.className='day';
-  d.id='day_'+i;
+(async function initCalendar() {
+  for (let i = 1; i <= 30; i++) {
+    const d = document.createElement('div');
+    d.className = 'day';
+    d.id = 'day_' + i;
 
-  if(i>today){
-    d.innerText='Día '+i+' 🔒';
-    d.classList.add('locked');
-  } else {
-    d.onclick=()=>openModal(i);
-    updateDayStatus(i);
+    if (i > today) {
+      d.innerText = 'Día ' + i + ' 🔒';
+      d.classList.add('locked');
+    } else {
+      d.onclick = () => openModal(i);
+      await updateDayStatus(i);
+    }
+
+    calendar.appendChild(d);
   }
-  calendar.appendChild(d);
-}
+})();
 
 function openModal(day){
   currentDay=day;
