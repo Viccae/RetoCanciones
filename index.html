@@ -46,7 +46,7 @@ const calendar=document.getElementById('calendar');
 const modal=document.getElementById('modal');
 const today=new Date().getDate();
 
-const allowedUsers={"User1":"🧑‍🎧","User2":"🎸"};
+const allowedUsers={"Carlo":"🧑‍🎧","Sara":"🎸"};
 
 let currentDay=null;
 let currentUser=null;
@@ -142,7 +142,8 @@ async function updateDayStatus(day){
 
   let songs=doc.exists?doc.data().songs||[]:[];
 
-  let html='Día '+day+'<div class="avatars">';
+  const msg = dayMessages[day] || ('Día ' + day);
+  let html = `<div>${msg}</div><div class="avatars">`;
 
   Object.keys(allowedUsers).forEach(u=>{
     const has=songs.some(s=>s.name===u);
