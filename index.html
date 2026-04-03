@@ -119,22 +119,41 @@ for (let i = 1; i <= 30; i++) {
   d.id = 'day_' + i;
   d.onclick = () => openModal(i); // asignamos onclick
 
-  calendar.appendChild(d);        // agregamos al DOM
-  updateDayStatus(i);             // actualizamos estado
+  calendar.appendChild(d);        
+  updateDayStatus(i);             
 }
 
 function openModal(day) {
-  // solo se puede abrir si no está bloqueado
-  if (day > today) return;
-
+  if (day > today) return; // Bloqueado
   currentDay = day;
-  document.getElementById('dayTitle').innerText = dayMessages[day] || ('Día '+day);
+  document.getElementById('dayTitle').innerText = dayMessages[day] || ('Día ' + day);
   modal.style.display = 'flex';
   document.querySelector('.modal-content').classList.add('reveal');
   loadSong();
+
+  // Añadimos historial para manejar botón atrás
+  history.pushState({modalOpen:true}, '', '');
 }
 
-window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; }
+function closeModal() {
+  modal.style.display = 'none';
+  document.querySelector('.modal-content').classList.remove('reveal');
+
+  // Regresamos historial si abrimos con pushState
+  if (history.state && history.state.modalOpen) history.back();
+}
+
+// Cerrar modal si clic fuera del contenido
+modal.addEventListener('click', e => {
+  if (e.target === modal) closeModal();
+});
+
+// Manejo del botón atrás en móviles
+window.addEventListener('popstate', e => {
+  if (modal.style.display === 'flex') {
+    closeModal();
+  }
+});
 
 function convert(link) {
   const m = link.match(/(track|album|playlist)[\/|:]([a-zA-Z0-9]+)/);
