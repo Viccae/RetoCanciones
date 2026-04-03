@@ -119,11 +119,14 @@ for (let i = 1; i <= 30; i++) {
   d.id = 'day_' + i;
   d.onclick = () => openModal(i); // asignamos onclick
 
-  calendar.appendChild(d);        // primero agregamos al DOM
-  updateDayStatus(i);             // luego actualizamos estado y colores
+  calendar.appendChild(d);        // agregamos al DOM
+  updateDayStatus(i);             // actualizamos estado
 }
 
 function openModal(day) {
+  // solo se puede abrir si no está bloqueado
+  if (day > today) return;
+
   currentDay = day;
   document.getElementById('dayTitle').innerText = dayMessages[day] || ('Día '+day);
   modal.style.display = 'flex';
@@ -193,10 +196,10 @@ async function updateDayStatus(day) {
   const doc = await db.collection('calendar').doc('day_' + day).get();
 
   let songs = doc.exists ? doc.data().songs || [] : [];
-  const msg = dayMessages[day] || ('Día ' + day);
 
-  // Siempre mostrar título
-  el.innerHTML = `<div>${msg}</div>`;
+  // Días futuros muestran solo candado 🔒
+  let titleHTML = (day > today) ? '🔒' : (dayMessages[day] || ('Día ' + day));
+  el.innerHTML = `<div>${titleHTML}</div>`;
 
   // Avatares
   let avatarsHTML = '<div class="avatars">';
