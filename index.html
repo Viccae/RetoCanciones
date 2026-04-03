@@ -113,23 +113,15 @@ let currentDay = null;
 let currentUser = null;
 
 // Inicializar calendario
-(async function initCalendar() {
-  for (let i = 1; i <= 30; i++) {
-    const d = document.createElement('div');
-    d.className = 'day';
-    d.id = 'day_' + i;
+for (let i = 1; i <= 30; i++) {
+  const d = document.createElement('div');
+  d.className = 'day';
+  d.id = 'day_' + i;
+  d.onclick = () => openModal(i); // asignamos onclick
 
-    if (i > today) {
-      d.innerText = 'Día ' + i + ' 🔒';
-      d.classList.add('locked');
-    } else {
-      d.onclick = () => openModal(i);
-      await updateDayStatus(i);
-    }
-
-    calendar.appendChild(d);
-  }
-})();
+  calendar.appendChild(d);        // primero agregamos al DOM
+  updateDayStatus(i);             // luego actualizamos estado y colores
+}
 
 function openModal(day) {
   currentDay = day;
@@ -203,6 +195,10 @@ async function updateDayStatus(day) {
   let songs = doc.exists ? doc.data().songs || [] : [];
   const msg = dayMessages[day] || ('Día ' + day);
 
+  // Siempre mostrar título
+  el.innerHTML = `<div>${msg}</div>`;
+
+  // Avatares
   let avatarsHTML = '<div class="avatars">';
   Object.keys(allowedUsers).forEach(u => {
     const has = songs.some(s => s.name === u);
@@ -210,13 +206,15 @@ async function updateDayStatus(day) {
   });
   avatarsHTML += '</div>';
 
-  el.innerHTML = `<div>${msg}</div>${avatarsHTML>`;
-  el.classList.remove('empty','partial','full');
+  el.innerHTML += avatarsHTML;
 
+  // Colores según cantidad de canciones
+  el.classList.remove('empty','partial','full');
   if (songs.length === 0) el.classList.add('empty');
   else if (songs.length === 1) el.classList.add('partial');
   else if (songs.length >= 2) el.classList.add('full');
 
+  // Bloquear días futuros visualmente
   if (day > today) el.classList.add('locked');
 }
 </script>
