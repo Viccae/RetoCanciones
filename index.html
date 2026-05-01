@@ -14,13 +14,10 @@ h1{text-align:center; margin-top:40px;}
 
 /* sesión arriba izquierda */
 #sessionBar{
-  position:fixed;
-  top:10px;
-  left:10px;
+  position:relative;
+  text-align:right;
   font-size:12px;
-  background:rgba(0,0,0,0.4);
-  padding:6px 10px;
-  border-radius:8px;
+  margin-bottom:10px;
 }
 
 #logoutBtnTop{
@@ -107,7 +104,6 @@ button{background:#1db954;color:white;}
     <input id="spotifyLink" placeholder="Link Spotify">
 
     <button onclick="saveSong()">Guardar</button>
-    <button onclick="closeModal()">Cerrar</button>
 
     <div id="result"></div>
   </div>
