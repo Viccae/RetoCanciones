@@ -9,27 +9,28 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <style>
-body { font-family: 'Segoe UI', sans-serif; margin:0; padding:20px; background:linear-gradient(135deg,#0f2027,#203a43,#2c5364); color:white; }
-h1 { text-align:center; margin-bottom:10px; }
-#sessionBar { text-align:center; margin-bottom:20px; }
-.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:15px; max-width:1000px; margin:auto; }
-.day { border-radius:16px; padding:15px; text-align:center; cursor:pointer; transition:0.3s; min-height:110px; display:flex; flex-direction:column; justify-content:space-between; }
-.day:hover { transform:scale(1.03); }
-.locked { opacity:0.4; cursor:not-allowed; }
-.empty { background:#1e1e1e; }
-.partial { background:#d4a017; }
-.full { background:#1db954; }
-.avatars { display:flex; justify-content:center; gap:10px; margin-top:10px; }
-.avatar { font-size:20px; }
-.modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none; justify-content:center; align-items:center; }
-.modal-content { background:#1c1c1c; padding:25px; border-radius:16px; width:90%; max-width:500px; }
-input,button { width:100%; margin-top:10px; padding:10px; border:none; border-radius:8px; }
-button { background:#1db954; color:white; }
-#logoutBtnTop { background:#ff4d4d; width:auto; padding:6px 12px; margin-left:10px; }
-iframe { width:100%; margin-top:10px; }
-.song-block { margin-top:15px; }
+body { font-family:'Segoe UI'; margin:0; padding:20px; background:linear-gradient(135deg,#0f2027,#203a43,#2c5364); color:white;}
+h1{text-align:center;}
+#sessionBar{text-align:center;margin-bottom:20px;}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:15px;max-width:1000px;margin:auto;}
+.day{border-radius:16px;padding:15px;text-align:center;cursor:pointer;min-height:110px;display:flex;flex-direction:column;justify-content:space-between;}
+.locked{opacity:.4;cursor:not-allowed;}
+.empty{background:#1e1e1e;}
+.partial{background:#d4a017;}
+.full{background:#1db954;}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;justify-content:center;align-items:center;}
+.modal-content{background:#1c1c1c;padding:20px;border-radius:16px;width:90%;max-width:500px;}
+
+input,button{width:100%;margin-top:10px;padding:10px;border:none;border-radius:8px;}
+button{background:#1db954;color:white;}
+#logoutBtnTop{background:#ff4d4d;width:auto;}
+
+.song-block{margin-top:10px;}
 </style>
 </head>
+
 <body>
 
 <h1>🎶 Reto De Canciones</h1>
@@ -39,160 +40,227 @@ iframe { width:100%; margin-top:10px; }
 <div class="modal" id="modal">
   <div class="modal-content">
     <h2 id="dayTitle"></h2>
+
     <input id="username" placeholder="Nombre">
     <input id="password" type="password" placeholder="Contraseña">
     <input id="spotifyLink" placeholder="Link Spotify">
+
     <button onclick="saveSong()">Guardar</button>
+    <button onclick="closeModal()">Cerrar</button>
+
     <div id="result"></div>
   </div>
 </div>
 
 <script>
+
+// 🔥 CONFIG FIREBASE (tuya)
 const firebaseConfig = {
   apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
   authDomain: "retocanciones.firebaseapp.com",
   projectId: "retocanciones"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 const calendar = document.getElementById('calendar');
 const modal = document.getElementById('modal');
 const sessionBar = document.getElementById('sessionBar');
+
 const today = new Date().getDate();
 
-const allowedUsers = { "Carlo":"🤡", "Sara":"💀" };
+
+// 👇 EDITA AQUÍ DÍAS Y CATEGORÍAS
+const dayMessages = {
+  1:"La que te dice lo que NO puedes hacer",
+  2:"La que menciona otra banda",
+  3:"Con diálogo",
+  4:"En la que ocurre un accidente",
+  5:"Título más largo que la canción",
+  6:"Mensaje de voz",
+  7:"Menciona a un artista",
+  8:"Muchos instrumentos",
+  9:"Se pregunta algo",
+  10:"Outro piano"
+};
+
+// usuarios
+const allowedUsers = { "Carlo":"🤡","Sara":"💀" };
 
 let currentUser = null;
-let calendarData = {};
 let currentDay = null;
+let calendarData = {};
+
 
 // AUTO LOGIN
 function autoLogin(){
   const u = localStorage.getItem('musicalUser');
   const p = localStorage.getItem('musicalPass');
-
-  if(u && p && allowedUsers[u]){
-    currentUser = u;
-  }
+  if(u && p && allowedUsers[u]) currentUser = u;
   updateSessionUI();
 }
 
 function updateSessionUI(){
   if(currentUser){
-    sessionBar.innerHTML = `Conectado como <b>${currentUser}</b> ${allowedUsers[currentUser]} <button id="logoutBtnTop" onclick="logout()">Cerrar sesión</button>`;
-  } else {
-    sessionBar.innerHTML = 'No has iniciado sesión';
-  }
+    sessionBar.innerHTML = `Conectado como <b>${currentUser}</b> ${allowedUsers[currentUser]} 
+    <button id="logoutBtnTop" onclick="logout()">Salir</button>`;
+  } else sessionBar.innerHTML = "No has iniciado sesión";
 }
 
-// LOGOUT
 function logout(){
   localStorage.clear();
-  currentUser = null;
+  currentUser=null;
   updateSessionUI();
 }
+
 
 // INIT CALENDAR
 for(let i=1;i<=30;i++){
   const d=document.createElement('div');
   d.className='day';
   d.id='day_'+i;
-  d.onclick = () => openModal(i);
+  d.onclick=()=>openModal(i);
   calendar.appendChild(d);
 }
 
-// LOAD DATA
+
+// FIRESTORE LOAD
 async function loadCalendarData(){
   const snapshot = await db.collection('calendar').get();
-  snapshot.forEach(doc => {
-    calendarData[doc.id] = doc.data().songs || [];
+  snapshot.forEach(doc=>{
+    calendarData[doc.id]=doc.data().songs||[];
   });
   for(let i=1;i<=30;i++) updateDayStatus(i);
 }
+
 
 // OPEN MODAL
 function openModal(day){
   if(day>today) return;
   currentDay = day;
 
-  document.getElementById('dayTitle').innerText = 'Día ' + day;
+  document.getElementById('dayTitle').innerText = dayMessages[day] || ("Día "+day);
 
-  // ocultar login si ya hay sesión
   if(currentUser){
-    username.style.display = 'none';
-    password.style.display = 'none';
+    username.style.display='none';
+    password.style.display='none';
   } else {
-    username.style.display = 'block';
-    password.style.display = 'block';
+    username.style.display='block';
+    password.style.display='block';
   }
 
-  modal.style.display = 'flex';
+  modal.style.display='flex';
   loadSong();
+
+  history.pushState({modal:true}, '');
 }
+
+
+// CLOSE MODAL
+function closeModal(){
+  modal.style.display='none';
+}
+
+// click fuera
+modal.addEventListener('click', e=>{
+  if(e.target===modal) closeModal();
+});
+
+// botón atrás móvil
+window.addEventListener('popstate', ()=>{
+  if(modal.style.display==='flex') closeModal();
+});
+
+// tecla ESC
+window.addEventListener('keydown', e=>{
+  if(e.key==='Escape') closeModal();
+});
+
+
+// CONVERT SPOTIFY
+function convert(link){
+  const m=link.match(/(track|album|playlist)[\\/|:]([a-zA-Z0-9]+)/);
+  if(m) return `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
+  return null;
+}
+
 
 // SAVE SONG
 async function saveSong(){
-  let name = currentUser;
-  let pass = localStorage.getItem('musicalPass');
 
-  // login si no existe
+  let name=currentUser;
+  let pass=localStorage.getItem('musicalPass');
+
   if(!name){
-    name = username.value.trim();
-    pass = password.value.trim();
+    name=username.value.trim();
+    pass=password.value.trim();
 
-    if(!allowedUsers[name]) return alert('Usuario no permitido');
+    if(!allowedUsers[name]) return alert("Usuario no permitido");
 
-    const userRef = db.collection('users').doc(name);
-    const u = await userRef.get();
+    const userRef=db.collection('users').doc(name);
+    const u=await userRef.get();
 
-    if(u.exists && u.data().password !== pass) return alert('Contraseña incorrecta');
+    if(u.exists && u.data().password!==pass) return alert("Contraseña incorrecta");
     if(!u.exists) await userRef.set({password:pass});
 
-    localStorage.setItem('musicalUser', name);
-    localStorage.setItem('musicalPass', pass);
+    localStorage.setItem('musicalUser',name);
+    localStorage.setItem('musicalPass',pass);
 
-    currentUser = name;
+    currentUser=name;
     updateSessionUI();
   }
 
-  const link = spotifyLink.value.trim();
-  const embed = link;
+  const embed=convert(spotifyLink.value.trim());
+  if(!embed) return alert("Link inválido");
 
-  const ref = db.collection('calendar').doc('day_'+currentDay);
-  const doc = await ref.get();
-  let songs = doc.exists ? doc.data().songs || [] : [];
+  const ref=db.collection('calendar').doc('day_'+currentDay);
+  const doc=await ref.get();
+  let songs=doc.exists ? doc.data().songs||[] : [];
 
-  if(songs.some(s=>s.name===name)) return alert('Ya enviaste');
-  if(songs.length>=2) return alert('Completo');
+  if(songs.some(s=>s.name===name)) return alert("Ya enviaste");
+  if(songs.length>=2) return alert("Completo");
 
-  songs.push({name, link:embed});
+  songs.push({name,link:embed});
   await ref.set({songs});
 
-  calendarData['day_'+currentDay] = songs;
+  calendarData['day_'+currentDay]=songs;
   updateDayStatus(currentDay);
   loadSong();
 }
+
 
 // LOAD SONGS
 function loadSong(){
   const result=document.getElementById('result');
   result.innerHTML='';
-  const songs = calendarData['day_'+currentDay] || [];
+
+  const songs=calendarData['day_'+currentDay]||[];
+
+  if(songs.length===0){
+    result.innerHTML="Nada aún";
+    return;
+  }
 
   songs.forEach(s=>{
-    result.innerHTML += `<div class="song-block"><b>${s.name}</b><iframe src="${s.link}"></iframe></div>`;
+    result.innerHTML+=`
+      <div class="song-block">
+        <b>${s.name}</b>
+        <iframe src="${s.link}"></iframe>
+      </div>`;
   });
 }
+
 
 // UPDATE DAY
 function updateDayStatus(day){
   const el=document.getElementById('day_'+day);
-  const songs = calendarData['day_'+day] || [];
+  const songs=calendarData['day_'+day]||[];
 
-  el.innerHTML = `<div>${day}</div>`;
+  el.innerHTML=`<div>${dayMessages[day] || day}</div>`;
 
   el.classList.remove('empty','partial','full');
+
   if(songs.length===0) el.classList.add('empty');
   else if(songs.length===1) el.classList.add('partial');
   else el.classList.add('full');
@@ -200,9 +268,11 @@ function updateDayStatus(day){
   if(day>today) el.classList.add('locked');
 }
 
+
 // INIT
 autoLogin();
 loadCalendarData();
+
 </script>
 
 </body>
