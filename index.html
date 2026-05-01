@@ -10,7 +10,8 @@
 
 <style>
 body { font-family: 'Segoe UI', sans-serif; margin:0; padding:20px; background:linear-gradient(135deg,#0f2027,#203a43,#2c5364); color:white; }
-h1 { text-align:center; margin-bottom:30px; }
+h1 { text-align:center; margin-bottom:10px; }
+#sessionBar { text-align:center; margin-bottom:20px; }
 .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:15px; max-width:1000px; margin:auto; }
 .day { border-radius:16px; padding:15px; text-align:center; cursor:pointer; transition:0.3s; min-height:110px; display:flex; flex-direction:column; justify-content:space-between; }
 .day:hover { transform:scale(1.03); }
@@ -21,20 +22,18 @@ h1 { text-align:center; margin-bottom:30px; }
 .avatars { display:flex; justify-content:center; gap:10px; margin-top:10px; }
 .avatar { font-size:20px; }
 .modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none; justify-content:center; align-items:center; }
-.modal-content { background:#1c1c1c; padding:25px; border-radius:16px; width:90%; max-width:500px; animation:pop 0.3s ease; }
-@keyframes pop { from { transform:scale(0.8); opacity:0; } to { transform:scale(1); opacity:1; } }
-.reveal { animation:reveal 0.6s ease; }
-@keyframes reveal { from { transform:rotateY(90deg); opacity:0; } to { transform:rotateY(0); opacity:1; } }
+.modal-content { background:#1c1c1c; padding:25px; border-radius:16px; width:90%; max-width:500px; }
 input,button { width:100%; margin-top:10px; padding:10px; border:none; border-radius:8px; }
 button { background:#1db954; color:white; }
-#logoutBtn { background:#ff4d4d; }
+#logoutBtnTop { background:#ff4d4d; width:auto; padding:6px 12px; margin-left:10px; }
 iframe { width:100%; margin-top:10px; }
 .song-block { margin-top:15px; }
 </style>
 </head>
 <body>
 
-<h1> ​🎶Reto De Canciones!!!​</h1>
+<h1>🎶 Reto De Canciones</h1>
+<div id="sessionBar"></div>
 <div class="grid" id="calendar"></div>
 
 <div class="modal" id="modal">
@@ -44,7 +43,6 @@ iframe { width:100%; margin-top:10px; }
     <input id="password" type="password" placeholder="Contraseña">
     <input id="spotifyLink" placeholder="Link Spotify">
     <button onclick="saveSong()">Guardar</button>
-    <button id="logoutBtn" onclick="logout()">Cerrar sesión</button>
     <div id="result"></div>
   </div>
 </div>
@@ -54,31 +52,50 @@ const firebaseConfig = {
   apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
   authDomain: "retocanciones.firebaseapp.com",
   projectId: "retocanciones"
+"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 const calendar = document.getElementById('calendar');
 const modal = document.getElementById('modal');
+const sessionBar = document.getElementById('sessionBar');
 const today = new Date().getDate();
 
-const allowedUsers = { "Carlo":"​🤡​", "Sara":"💀​" };
-const dayMessages = {
-  1:"La que te dice lo que NO puedes hacer",2:"La que menciona otra banda",3:"Con diálogo o parte hablada",4:"En la que ocurre un accidente",
-  5:"El título es más largo que la canción",6:"Con mensaje de voz/contestador automático",7:"La que menciona a un artista",
-  8:"Con más instrumentos sonando a la vez",9:"La que se pregunta algo",10:"Con outro de piano", 11:"Dura menos de 1 minuto (no vale punk)", 12:"Con silbidos",
-  13:"Dura entre 8 y 10 minutos (si dura 7:59 o 10:01 no vale)", 14:"La que no nombra el tema de la canción", 15:"La canción que te gusta de un artista que no te gusta",
-  16:"Con voces de niños", 17:"Con intro de teclado", 18:"Canción de escapar", 19:"La que desea algo", 20:"La voz comienza antes de los instrumentos", 21:"El grunge también puede ser feliz",
-  22:"Cantada a dos voces",23:"Menciona a un escritor",24:"Con chasquido de dedos",25:"Con uso EXCEPCIONAL de pandereta",
-  26:"Empieza con el nombre de la canción",27:"La primera palabra del tema es el título de la canción",28:"Empieza con el coro",29:"No tiene estribillo y es hermosa",30:"Con una intro épica"
-};
+const allowedUsers = { "Carlo":"🤡", "Sara":"💀" };
 
-let currentDay = null;
 let currentUser = null;
-let calendarData = {}; // Datos cacheados de Firestore
+let calendarData = {};
+let currentDay = null;
 
-// Inicializar calendario
-for (let i=1;i<=30;i++){
+// AUTO LOGIN
+function autoLogin(){
+  const u = localStorage.getItem('musicalUser');
+  const p = localStorage.getItem('musicalPass');
+
+  if(u && p && allowedUsers[u]){
+    currentUser = u;
+  }
+  updateSessionUI();
+}
+
+function updateSessionUI(){
+  if(currentUser){
+    sessionBar.innerHTML = `Conectado como <b>${currentUser}</b> ${allowedUsers[currentUser]} <button id="logoutBtnTop" onclick="logout()">Cerrar sesión</button>`;
+  } else {
+    sessionBar.innerHTML = 'No has iniciado sesión';
+  }
+}
+
+// LOGOUT
+function logout(){
+  localStorage.clear();
+  currentUser = null;
+  updateSessionUI();
+}
+
+// INIT CALENDAR
+for(let i=1;i<=30;i++){
   const d=document.createElement('div');
   d.className='day';
   d.id='day_'+i;
@@ -86,134 +103,107 @@ for (let i=1;i<=30;i++){
   calendar.appendChild(d);
 }
 
-// Cargar datos de Firestore al inicio
+// LOAD DATA
 async function loadCalendarData(){
   const snapshot = await db.collection('calendar').get();
   snapshot.forEach(doc => {
     calendarData[doc.id] = doc.data().songs || [];
   });
-  // Pintar todos los días
   for(let i=1;i<=30;i++) updateDayStatus(i);
 }
-loadCalendarData();
 
-// Abrir modal
+// OPEN MODAL
 function openModal(day){
   if(day>today) return;
   currentDay = day;
 
-  const storedUser = localStorage.getItem('musicalUser');
-  const storedPass = localStorage.getItem('musicalPass');
-  if(storedUser && storedPass && allowedUsers[storedUser]){
-    currentUser = storedUser;
-    username.value = storedUser;
-    password.value = storedPass;
+  document.getElementById('dayTitle').innerText = 'Día ' + day;
+
+  // ocultar login si ya hay sesión
+  if(currentUser){
+    username.style.display = 'none';
+    password.style.display = 'none';
   } else {
-    currentUser = null;
-    username.value = '';
-    password.value = '';
+    username.style.display = 'block';
+    password.style.display = 'block';
   }
 
-  document.getElementById('dayTitle').innerText = dayMessages[day] || ('Día '+day);
   modal.style.display = 'flex';
-  document.querySelector('.modal-content').classList.add('reveal');
   loadSong();
-  history.pushState({modalOpen:true}, '', '');
 }
 
-// Cerrar modal
-function closeModal(){
-  modal.style.display='none';
-  document.querySelector('.modal-content').classList.remove('reveal');
-  if(history.state && history.state.modalOpen) history.back();
-}
-modal.addEventListener('click',e=>{ if(e.target===modal) closeModal(); });
-window.addEventListener('popstate', e=>{ if(modal.style.display==='flex') closeModal(); });
-
-// Convertir link Spotify
-function convert(link){
-  const m=link.match(/(track|album|playlist)[\/|:]([a-zA-Z0-9]+)/);
-  if(m) return `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
-  return null;
-}
-
-// Guardar canción
+// SAVE SONG
 async function saveSong(){
-  const name=username.value.trim();
-  const pass=password.value.trim();
-  const link=spotifyLink.value.trim();
+  let name = currentUser;
+  let pass = localStorage.getItem('musicalPass');
 
-  if(!allowedUsers[name]) return alert('Usuario no permitido');
-  currentUser=name;
+  // login si no existe
+  if(!name){
+    name = username.value.trim();
+    pass = password.value.trim();
 
-  const embed = convert(link);
-  if(!embed) return alert('Link inválido');
+    if(!allowedUsers[name]) return alert('Usuario no permitido');
 
-  const userRef = db.collection('users').doc(name);
-  const u = await userRef.get();
-  if(u.exists && u.data().password !== pass) return alert('Contraseña incorrecta');
-  if(!u.exists) await userRef.set({password:pass});
+    const userRef = db.collection('users').doc(name);
+    const u = await userRef.get();
 
-  localStorage.setItem('musicalUser', name);
-  localStorage.setItem('musicalPass', pass);
+    if(u.exists && u.data().password !== pass) return alert('Contraseña incorrecta');
+    if(!u.exists) await userRef.set({password:pass});
+
+    localStorage.setItem('musicalUser', name);
+    localStorage.setItem('musicalPass', pass);
+
+    currentUser = name;
+    updateSessionUI();
+  }
+
+  const link = spotifyLink.value.trim();
+  const embed = link;
 
   const ref = db.collection('calendar').doc('day_'+currentDay);
   const doc = await ref.get();
   let songs = doc.exists ? doc.data().songs || [] : [];
+
   if(songs.some(s=>s.name===name)) return alert('Ya enviaste');
   if(songs.length>=2) return alert('Completo');
 
   songs.push({name, link:embed});
   await ref.set({songs});
 
-  calendarData['day_'+currentDay] = songs; // Actualizar cache
+  calendarData['day_'+currentDay] = songs;
   updateDayStatus(currentDay);
   loadSong();
 }
 
-// Cerrar sesión
-function logout(){
-  localStorage.removeItem('musicalUser');
-  localStorage.removeItem('musicalPass');
-  currentUser=null;
-  username.value=''; password.value='';
-}
-
-// Cargar canciones en modal
+// LOAD SONGS
 function loadSong(){
   const result=document.getElementById('result');
   result.innerHTML='';
   const songs = calendarData['day_'+currentDay] || [];
-  const userSubmitted = songs.some(s=>s.name===currentUser);
-  let html = '';
+
   songs.forEach(s=>{
-    if(userSubmitted || s.name===currentUser){
-      html += `<div class="song-block"><b>${s.name}</b><iframe src="${s.link}"></iframe></div>`;
-    } else html += `<div class="song-block"><b>${s.name}</b> 🔒</div>`;
+    result.innerHTML += `<div class="song-block"><b>${s.name}</b><iframe src="${s.link}"></iframe></div>`;
   });
-  result.innerHTML = html || 'Nada aún';
 }
 
-// Pintar estado de días
+// UPDATE DAY
 function updateDayStatus(day){
   const el=document.getElementById('day_'+day);
   const songs = calendarData['day_'+day] || [];
-  let titleHTML = (day>today) ? '🔒' : (dayMessages[day] || ('Día '+day));
-  el.innerHTML = `<div>${titleHTML}</div>`;
 
-  let avatarsHTML = '<div class="avatars">';
-  Object.keys(allowedUsers).forEach(u=>{
-    avatarsHTML += `<span class="avatar">${allowedUsers[u]} ${songs.some(s=>s.name===u)?'✔️':'❌'}</span>`;
-  });
-  avatarsHTML += '</div>';
-  el.innerHTML += avatarsHTML;
+  el.innerHTML = `<div>${day}</div>`;
 
   el.classList.remove('empty','partial','full');
   if(songs.length===0) el.classList.add('empty');
   else if(songs.length===1) el.classList.add('partial');
-  else if(songs.length>=2) el.classList.add('full');
+  else el.classList.add('full');
+
   if(day>today) el.classList.add('locked');
 }
+
+// INIT
+autoLogin();
+loadCalendarData();
 </script>
 
 </body>
