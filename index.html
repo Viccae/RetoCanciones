@@ -305,23 +305,64 @@ async function saveSong(){
 
 // LOAD SONGS
 function loadSong(){
+
   const result=document.getElementById('result');
   result.innerHTML='';
 
-  const songs=calendarData['day_'+currentDay]||[];
+  const songs=calendarData['day_'+currentDay] || [];
 
   if(songs.length===0){
     result.innerHTML="Ninguno ha enviado nada todavía...";
     return;
   }
 
+  // comprobar si ya envió una canción del día
+  const userSubmitted = songs.some(s => s.name === currentUser);
+
   songs.forEach(s=>{
-    result.innerHTML+=`
+
+    // si ya envió -> ve todo
+    if(userSubmitted){
+
+      result.innerHTML += `
       <div class="song-block">
         <b>${s.name}</b>
-        <iframe src="${s.link}"></iframe>
+        <iframe src="${s.link}"
+        frameborder="0"
+        allowtransparency="true"
+        allow="encrypted-media"></iframe>
       </div>`;
+
+    }
+
+    // si NO envió -> solo ve la suya
+    else {
+
+      if(s.name === currentUser){
+
+        result.innerHTML += `
+        <div class="song-block">
+          <b>${s.name}</b>
+          <iframe src="${s.link}"
+          frameborder="0"
+          allowtransparency="true"
+          allow="encrypted-media"></iframe>
+        </div>`;
+
+      } else {
+
+        result.innerHTML += `
+        <div class="song-block">
+          <b>${s.name}</b><br>
+          🔒 Todavía no has enviado tu canción
+        </div>`;
+
+      }
+
+    }
+
   });
+
 }
 
 
