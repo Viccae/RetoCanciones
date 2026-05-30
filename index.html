@@ -194,7 +194,7 @@ function logout(){
 
 
 // CALENDARIO
-for(let i=1;i<=30;i++){
+for(let i=1;i<=31;i++){
   const d=document.createElement('div');
   d.className='day';
   d.id='day_'+i;
@@ -209,7 +209,7 @@ async function loadCalendarData(){
   snapshot.forEach(doc=>{
     calendarData[doc.id]=doc.data().songs||[];
   });
-  for(let i=1;i<=30;i++) updateDayStatus(i);
+  for(let i=1;i<=31;i++) updateDayStatus(i);
 }
 
 
