@@ -129,38 +129,41 @@ const sessionBar = document.getElementById('sessionBar');
 
 const today = new Date().getDate();
 
+
+const días = 31;
 // 👇 EDITABLE
 const dayMessages = {
-  1:"Que menciona a un artista",
-  2:"Se escucha una respiración",
-  3:"Que se llame como tú o que mencione tu nombre",
-  4:"La canción que te gusta de un artista que no te gusta",
-  5:"Una canción repita la misma frase una y otra vez",
-  6:"Empieza con el coro",
-  7:"Una que tenga lluvia",
-  8:"Que mencione un deporte",
-  9:"Con diálogo o parte hablada",
-  10:"Que mencione una ciudad a la que te gustaría irte a vivir",
-  11:"Con una frase que te defina",
-  12:"Una canción que tenga una estructura en “capas” (va sumando instrumentos progresivamente)",
-  13:"Con silbidos",
-  14:"Una canción comunista o claramente politizada (que hable sobre derechos, justicia social o de que hay que comerse a los ricos)",
-  15:"Una canción que use instrumentos poco comunes",
-  16:"Con chasquido de dedos",
-  17:"Que le dedicarías a alguien del trabajo",
-  18:"Una canción que nombre a una marca",
-  19:"Canción de escapar",
-  20:"Una canción que incluya sonidos de ciudad (coches, tráfico, gente)",
-  21:"Dura menos de  minuto (no vale punk)",
-  22:"Ritmo tonto/ pegadizo ",
-  23:"Una canción que el título sea un insecto o un bicho",
-  24:"Una canción que mencione animales ",
-  25:"El grunge también puede ser feliz",
-  26:"Vibes de cabaña cozy en un bosque en un día de lluvia",
-  27:"Que el título sea un color",
-  28:"Dura entre 8 y 10 minutos (si dura 7:59 o 10:01 no vale)",
-  29:"Una canción que tenga un cambio claro de emoción (de triste a alegre o viceversa)",
-  30:"Que el título sea una profesión"
+  1:"Una canción con un solo de saxofón",
+  2:"Que sea una versión o cover mejor que la original",
+  3:"Que menciona a otra banda",
+  4:"Una canción que el título sea una sola letra",
+  5:"Que tenga un final abrupto",
+  6:"Una canción que tenga un conteo (en plan 1, 2, 3, 4)",
+  7:"Una canción que mencione un edificio famoso",
+  8:"Que el título sea un color",
+  9:"Una canción que te haga llorar",
+  10:"Con uso EXCEPCIONAL de pandereta",
+  11:"Que sea un featuring de artistas de países distintos",
+  12:"Una canción que mencione a un científico",
+  13:"Una canción que parezca alegre pero tenga una letra tristísima",
+  14:"Con una intro épica",
+  15:"Que el título sea una emoción",
+  16:"Que mencione un pecado capital",
+  17:"Una canción publicada en el año en que naciste",
+  18:"Una canción en otro idioma que no sea inglés ni español",
+  19:"Sobre una ruptura",
+  20:"Que mencione una obra de arte",
+  21:"Una canción con voces de niños",
+  22:"Una canción que mencione un videojuego",
+  23:"Que mencione un perfume",
+  24:"Una canción que transmita las vibes de estar viendo un atardecer",
+  25:"Una canción que mencione el mar o el océano",
+  26:"Una canción que tenga un aplauso",
+  27:"Una canción que claramente sea una autistada (que te explica una cosa muy de nicho de forma muy pasional)",
+  28:"Que mencione un animal mitológico",
+  29:"Una canción que mencione un día de la semana",
+  30:"Con outro de piano",
+  31:"El título es un pájaro"
 };
 
 const allowedUsers = { "Carlo":"🤡","Sara":"💀" };
@@ -193,7 +196,7 @@ function logout(){
 
 
 // CALENDARIO
-for(let i=1;i<=30;i++){
+for(let i=1;i<=días;i++){
   const d=document.createElement('div');
   d.className='day';
   d.id='day_'+i;
@@ -208,7 +211,7 @@ async function loadCalendarData(){
   snapshot.forEach(doc=>{
     calendarData[doc.id]=doc.data().songs||[];
   });
-  for(let i=1;i<=30;i++) updateDayStatus(i);
+  for(let i=1;i<=días;i++) updateDayStatus(i);
 }
 
 
