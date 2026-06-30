@@ -130,7 +130,7 @@ const sessionBar = document.getElementById('sessionBar');
 const today = new Date().getDate();
 
 
-const días = 31;
+const dias = 31;
 // 👇 EDITABLE
 const dayMessages = {
   1:"Una canción con un solo de saxofón",
@@ -196,7 +196,7 @@ function logout(){
 
 
 // CALENDARIO
-for(let i=1;i<=días;i++){
+for(let i=1;i<=dias;i++){
   const d=document.createElement('div');
   d.className='day';
   d.id='day_'+i;
@@ -211,7 +211,7 @@ async function loadCalendarData(){
   snapshot.forEach(doc=>{
     calendarData[doc.id]=doc.data().songs||[];
   });
-  for(let i=1;i<=días;i++) updateDayStatus(i);
+  for(let i=1;i<=dias;i++) updateDayStatus(i);
 }
 
 
