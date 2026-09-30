@@ -129,6 +129,48 @@ const sessionBar = document.getElementById('sessionBar');
 
 const today = new Date().getDate();
 
+  // FECHA ACTUAL
+const ahora = new Date();
+
+const añoActual = ahora.getFullYear();
+const mesActual = ahora.getMonth() + 1;
+
+// ¿Ha cambiado el mes?
+let cambioDeMes = false;
+
+
+// COMPROBAR CAMBIO DE MES
+async function comprobarCambioDeMes(){
+
+  const ref = db.collection('config').doc('calendar');
+  const doc = await ref.get();
+
+  // Si nunca se ha inicializado el calendario,
+  // consideramos que es un cambio de mes
+  if(!doc.exists){
+    cambioDeMes = true;
+
+    await ref.set({
+      month: mesActual,
+      year: añoActual
+    });
+
+    return;
+  }
+
+  const datos = doc.data();
+
+  if(datos.month !== mesActual || datos.year !== añoActual){
+
+    cambioDeMes = true;
+
+  } else {
+
+    cambioDeMes = false;
+
+  }
+}
+
 
 const dias = 30;
 // 👇 EDITABLE
