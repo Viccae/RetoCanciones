@@ -113,9 +113,7 @@ button{background:#1db954;color:white;}
 
 <script>
 
-// ============================================================
 // FIREBASE
-// ============================================================
 
 const firebaseConfig = {
   apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
@@ -127,18 +125,18 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 
-// ============================================================
-// ELEMENTOS HTML
-// ============================================================
+
+// CARGAR LOS ELEMENTOS HTML
+
 
 const calendar = document.getElementById('calendar');
 const modal = document.getElementById('modal');
 const sessionBar = document.getElementById('sessionBar');
 
 
-// ============================================================
-// FECHA ACTUAL
-// ============================================================
+
+// CARGAR LA FECHA ACTUAL
+
 
 const ahora = new Date();
 
@@ -147,7 +145,7 @@ const mesActual = ahora.getMonth() + 1;
 const hoy = ahora.getDate();
 
 
-// Número de días del mes actual
+// CUANTOS DIAS TIENE EL MES ACTUAL PARA PODER AJUSTAR EL NUMERO DE CANCIONES Y ELEMENTOS HTML
 
 const dias = new Date(
   añoActual,
@@ -156,24 +154,17 @@ const dias = new Date(
 ).getDate();
 
 
-// ============================================================
-// CAMBIO DE MES
-// ============================================================
+// FLAG PARA CAMBIAR DE MES
 
 let cambioDeMes = false;
 
-
-// ============================================================
-// RETOS
-// ============================================================
+// POOL DE RETOS
 
 let dayMessages = {};
 let poolRetos = [];
 
-
-// ============================================================
 // USUARIOS
-// ============================================================
+
 
 const allowedUsers = {
   "Carlo": "🤡",
@@ -185,9 +176,9 @@ let currentDay = null;
 let calendarData = {};
 
 
-// ============================================================
+
 // COMPROBAR CAMBIO DE MES
-// ============================================================
+
 
 async function comprobarCambioDeMes(){
 
@@ -198,9 +189,9 @@ async function comprobarCambioDeMes(){
   const doc = await ref.get();
 
 
-  // ----------------------------------------------------------
-  // No existe configuración
-  // ----------------------------------------------------------
+
+  // cOMPROBAR CONFIUGURACION
+
 
   if(!doc.exists){
 
@@ -218,19 +209,14 @@ async function comprobarCambioDeMes(){
   }
 
 
-  // ----------------------------------------------------------
   // Leer configuración
-  // ----------------------------------------------------------
 
   const datos = doc.data();
 
   const ultimoMes = datos.month;
   const ultimoAño = datos.year;
 
-
-  // ----------------------------------------------------------
   // Comparar
-  // ----------------------------------------------------------
 
   if(
     ultimoMes !== mesActual ||
@@ -272,9 +258,9 @@ async function comprobarCambioDeMes(){
 }
 
 
-// ============================================================
-// CARGAR POOL DE RETOS DESDE retos.json
-// ============================================================
+
+// CARGAR POOL DE RETOS
+
 
 async function cargarPoolRetos(){
 
@@ -309,9 +295,9 @@ async function cargarPoolRetos(){
 }
 
 
-// ============================================================
-// MEZCLAR RETOS
-// ============================================================
+
+// rANDOMIZAR RETOS
+
 
 function mezclar(array){
 
@@ -346,10 +332,8 @@ function mezclar(array){
 
 }
 
-
-// ============================================================
 // GENERAR RETOS DEL MES
-// ============================================================
+
 
 function generarDayMessages(){
 
@@ -401,9 +385,8 @@ function generarDayMessages(){
 }
 
 
-// ============================================================
 // BORRAR CALENDAR DE FIREBASE
-// ============================================================
+
 
 async function borrarCalendar(){
 
@@ -427,9 +410,7 @@ async function borrarCalendar(){
   }
 
 
-  // Firestore permite un máximo de 500 operaciones
-  // por batch. Nuestro calendario tendrá como máximo
-  // 31 documentos, así que cabe perfectamente.
+  // Firestore permite un máximo de 500 operacioneS por batch. Como máximo tendrá 31, así que cabe perfectamente.
 
   const batch = db.batch();
 
@@ -450,10 +431,7 @@ async function borrarCalendar(){
 
 }
 
-
-// ============================================================
 // CREAR NUEVO CALENDARIO EN FIREBASE
-// ============================================================
 
 async function crearNuevoCalendar(){
 
@@ -492,10 +470,7 @@ async function crearNuevoCalendar(){
 
 }
 
-
-// ============================================================
 // GUARDAR MES ACTUAL
-// ============================================================
 
 async function marcarMesActual(){
 
@@ -526,9 +501,8 @@ async function marcarMesActual(){
 }
 
 
-// ============================================================
 // PREPARAR NUEVO MES
-// ============================================================
+
 
 async function prepararNuevoMes(){
 
@@ -545,38 +519,15 @@ async function prepararNuevoMes(){
   );
 
 
-  // ----------------------------------------------------------
   // 1. Borrar calendario anterior
-  // ----------------------------------------------------------
-
   await borrarCalendar();
-
-
-  // ----------------------------------------------------------
   // 2. Cargar pool de retos
-  // ----------------------------------------------------------
-
   await cargarPoolRetos();
-
-
-  // ----------------------------------------------------------
   // 3. Randomizar y seleccionar retos
-  // ----------------------------------------------------------
-
   generarDayMessages();
-
-
-  // ----------------------------------------------------------
   // 4. Guardar selección en Firebase
-  // ----------------------------------------------------------
-
   await crearNuevoCalendar();
-
-
-  // ----------------------------------------------------------
   // 5. Guardar mes actual
-  // ----------------------------------------------------------
-
   await marcarMesActual();
 
 
@@ -595,9 +546,8 @@ async function prepararNuevoMes(){
 }
 
 
-// ============================================================
+
 // LOGIN AUTOMÁTICO
-// ============================================================
 
 function autoLogin(){
 
@@ -626,9 +576,8 @@ function autoLogin(){
 }
 
 
-// ============================================================
 // ACTUALIZAR SESIÓN
-// ============================================================
+
 
 function updateSessionUI(){
 
@@ -653,10 +602,8 @@ function updateSessionUI(){
 
 }
 
-
-// ============================================================
 // LOGOUT
-// ============================================================
+
 
 function logout(){
 
@@ -669,9 +616,8 @@ function logout(){
 }
 
 
-// ============================================================
 // CREAR CALENDARIO HTML
-// ============================================================
+
 
 function crearCalendario(){
 
@@ -695,9 +641,8 @@ function crearCalendario(){
 }
 
 
-// ============================================================
 // CARGAR CALENDARIO DESDE FIREBASE
-// ============================================================
+
 
 async function loadCalendarData(){
 
@@ -716,9 +661,9 @@ async function loadCalendarData(){
   });
 
 
-  // ----------------------------------------------------------
+
   // Crear dayMessages usando Firebase
-  // ----------------------------------------------------------
+
 
   dayMessages = {};
 
@@ -738,10 +683,8 @@ async function loadCalendarData(){
 
   }
 
-
-  // ----------------------------------------------------------
   // Actualizar calendario visual
-  // ----------------------------------------------------------
+
 
   for(let i = 1; i <= dias; i++){
 
@@ -757,9 +700,7 @@ async function loadCalendarData(){
 }
 
 
-// ============================================================
 // ABRIR MODAL
-// ============================================================
 
 function openModal(day){
 
@@ -805,9 +746,7 @@ function openModal(day){
 }
 
 
-// ============================================================
 // CERRAR MODAL
-// ============================================================
 
 function closeModal(){
 
@@ -858,9 +797,7 @@ window.addEventListener(
 );
 
 
-// ============================================================
 // SPOTIFY
-// ============================================================
 
 function convert(link){
 
@@ -881,9 +818,7 @@ function convert(link){
 }
 
 
-// ============================================================
 // GUARDAR CANCIÓN
-// ============================================================
 
 async function saveSong(){
 
@@ -893,9 +828,7 @@ async function saveSong(){
     localStorage.getItem('musicalPass');
 
 
-  // ----------------------------------------------------------
   // Login si no existe sesión
-  // ----------------------------------------------------------
 
   if(!name){
 
@@ -962,9 +895,7 @@ async function saveSong(){
   }
 
 
-  // ----------------------------------------------------------
   // Comprobar Spotify
-  // ----------------------------------------------------------
 
   const embed =
     convert(
@@ -981,9 +912,7 @@ async function saveSong(){
   }
 
 
-  // ----------------------------------------------------------
   // Documento del día
-  // ----------------------------------------------------------
 
   const ref =
     db.collection('calendar')
@@ -1010,9 +939,7 @@ async function saveSong(){
     data.songs || [];
 
 
-  // ----------------------------------------------------------
   // Comprobar si ya envió
-  // ----------------------------------------------------------
 
   if(
     songs.some(
@@ -1027,9 +954,7 @@ async function saveSong(){
   }
 
 
-  // ----------------------------------------------------------
   // Comprobar límite
-  // ----------------------------------------------------------
 
   if(songs.length >= 2){
 
@@ -1040,9 +965,7 @@ async function saveSong(){
   }
 
 
-  // ----------------------------------------------------------
   // Añadir canción
-  // ----------------------------------------------------------
 
   songs.push({
 
@@ -1085,9 +1008,7 @@ async function saveSong(){
 }
 
 
-// ============================================================
 // CARGAR CANCIONES
-// ============================================================
 
 function loadSong(){
 
@@ -1118,9 +1039,7 @@ function loadSong(){
   }
 
 
-  // ----------------------------------------------------------
   // Comprobar si el usuario ya envió
-  // ----------------------------------------------------------
 
   const userSubmitted =
     songs.some(
@@ -1131,9 +1050,7 @@ function loadSong(){
   songs.forEach(s => {
 
 
-    // --------------------------------------------------------
     // Usuario ya envió -> puede ver todo
-    // --------------------------------------------------------
 
     if(userSubmitted){
 
@@ -1155,9 +1072,7 @@ function loadSong(){
     }
 
 
-    // --------------------------------------------------------
     // Usuario todavía no envió
-    // --------------------------------------------------------
 
     else {
 
@@ -1200,9 +1115,7 @@ function loadSong(){
 }
 
 
-// ============================================================
 // ACTUALIZAR ESTADO DEL DÍA
-// ============================================================
 
 function updateDayStatus(day){
 
@@ -1240,9 +1153,7 @@ function updateDayStatus(day){
   `;
 
 
-  // ----------------------------------------------------------
   // Iconos de usuarios
-  // ----------------------------------------------------------
 
   let avatars =
     '<div class="avatars">';
@@ -1268,9 +1179,7 @@ function updateDayStatus(day){
   el.innerHTML += avatars;
 
 
-  // ----------------------------------------------------------
   // Estado visual
-  // ----------------------------------------------------------
 
   el.classList.remove(
     'empty',
@@ -1306,9 +1215,7 @@ function updateDayStatus(day){
 }
 
 
-// ============================================================
 // INICIALIZACIÓN
-// ============================================================
 
 async function init(){
 
@@ -1323,23 +1230,14 @@ async function init(){
     );
 
 
-    // --------------------------------------------------------
     // Login
-    // --------------------------------------------------------
 
     autoLogin();
 
 
-    // --------------------------------------------------------
     // Comprobar cambio de mes
-    // --------------------------------------------------------
-
     await comprobarCambioDeMes();
-
-
-    // --------------------------------------------------------
     // SI ES UN MES NUEVO
-    // --------------------------------------------------------
 
     if(cambioDeMes){
 
@@ -1348,16 +1246,12 @@ async function init(){
     }
 
 
-    // --------------------------------------------------------
     // Crear calendario HTML
-    // --------------------------------------------------------
 
     crearCalendario();
 
 
-    // --------------------------------------------------------
     // Cargar calendario desde Firebase
-    // --------------------------------------------------------
 
     await loadCalendarData();
 
@@ -1385,10 +1279,7 @@ async function init(){
 }
 
 
-// ============================================================
 // INICIAR
-// ============================================================
-
 init();
 
 </script>
