@@ -113,7 +113,10 @@ button{background:#1db954;color:white;}
 
 <script>
 
+// ============================================================
 // FIREBASE
+// ============================================================
+
 const firebaseConfig = {
   apiKey: "AIzaSyCHpr65I6f7Ap4VQ3Q1Y6engILO_ImAe4M",
   authDomain: "retocanciones.firebaseapp.com",
@@ -123,283 +126,1070 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+
+// ============================================================
+// ELEMENTOS HTML
+// ============================================================
+
 const calendar = document.getElementById('calendar');
 const modal = document.getElementById('modal');
 const sessionBar = document.getElementById('sessionBar');
 
-const today = new Date().getDate();
 
-  // FECHA ACTUAL
+// ============================================================
+// FECHA ACTUAL
+// ============================================================
+
 const ahora = new Date();
 
 const añoActual = ahora.getFullYear();
 const mesActual = ahora.getMonth() + 1;
+const hoy = ahora.getDate();
 
-// ¿Ha cambiado el mes?
+
+// Número de días del mes actual
+
+const dias = new Date(
+  añoActual,
+  mesActual,
+  0
+).getDate();
+
+
+// ============================================================
+// CAMBIO DE MES
+// ============================================================
+
 let cambioDeMes = false;
 
 
+// ============================================================
+// RETOS
+// ============================================================
+
+let dayMessages = {};
+let poolRetos = [];
+
+
+// ============================================================
+// USUARIOS
+// ============================================================
+
+const allowedUsers = {
+  "Carlo": "🤡",
+  "Sara": "💀"
+};
+
+let currentUser = null;
+let currentDay = null;
+let calendarData = {};
+
+
+// ============================================================
 // COMPROBAR CAMBIO DE MES
+// ============================================================
+
 async function comprobarCambioDeMes(){
 
-  const ref = db.collection('config').doc('calendar');
+  const ref = db
+    .collection('config')
+    .doc('calendar');
+
   const doc = await ref.get();
 
-  // Si nunca se ha inicializado el calendario,
-  // consideramos que es un cambio de mes
+
+  // ----------------------------------------------------------
+  // No existe configuración
+  // ----------------------------------------------------------
+
   if(!doc.exists){
+
     cambioDeMes = true;
 
-    await ref.set({
-      month: mesActual,
-      year: añoActual
-    });
+    console.log(
+      "🌱 No existe configuración del calendario."
+    );
+
+    console.log(
+      "🟢 cambioDeMes = TRUE"
+    );
 
     return;
   }
 
+
+  // ----------------------------------------------------------
+  // Leer configuración
+  // ----------------------------------------------------------
+
   const datos = doc.data();
 
-  if(datos.month !== mesActual || datos.year !== añoActual){
+  const ultimoMes = datos.month;
+  const ultimoAño = datos.year;
+
+
+  // ----------------------------------------------------------
+  // Comparar
+  // ----------------------------------------------------------
+
+  if(
+    ultimoMes !== mesActual ||
+    ultimoAño !== añoActual
+  ){
 
     cambioDeMes = true;
+
+    console.log(
+      "🌙 CAMBIO DE MES DETECTADO"
+    );
+
+    console.log(
+      `Anterior: ${ultimoMes}/${ultimoAño}`
+    );
+
+    console.log(
+      `Actual: ${mesActual}/${añoActual}`
+    );
+
+    console.log(
+      "🟢 cambioDeMes = TRUE"
+    );
 
   } else {
 
     cambioDeMes = false;
 
-  }
-}
+    console.log(
+      "📅 Seguimos en el mismo mes."
+    );
 
+    console.log(
+      "🔵 cambioDeMes = FALSE"
+    );
 
-const dias = 31;
-// 👇 EDITABLE
-const dayMessages = {
-1: "Una canción cuyo título sea una palabra inventada",
-2: "Una canción sobre conducir",
-3: "Con más instrumentos sonando a la vez",
-4: "Que mencione la ciudad en la que vives",
-5: "Menciona a un escritor",
-6: "Canción del verano",
-7: "Ritmo tonto/ pegadizo",
-8: "Que la cante alguien que te parezca un payaso(las razones que sean)",
-9: "Una canción que te transmita nostalgia",
-10: "Con intro de teclado",
-11: "Una canción que creas que no le va a gustar al otro",
-12: "Una canción que te recuerde a tu infancia",
-13: "Empieza con el coro",
-14: "Una canción con sonidos de dibujos animados",
-15: "Con mensaje de voz/contestador automático",
-16: "Una canción de deambular",
-17: "Una canción que tenga un aplauso",
-18: "Una canción que incluya sonidos de ciudad (coches, tráfico, gente)",
-19: "La que no nombra el tema de la canción",
-20: "Que te recuerde a alguien de tu familia",
-21: "Que transmita calma",
-22: "Una canción publicada el año en que naciste",
-23: "Una canción cuyo título sea un verbo en infinitivo",
-24: "Una canción donde el título se repita más de 3 veces",
-25: "Que tenga vibes de cabaña cozy en un bosque en un día de lluvia",
-26: "Con diálogo o parte hablada",
-27: "Sobre una ruptura",
-28: "Que mencione tu color favorito",
-29: "Una que tenga lluvia",
-30: "Una canción para celebrar haber sobrevivido al día",
-31: "Con voces distorsionadas"
-};
-
-const allowedUsers = { "Carlo":"🤡","Sara":"💀" };
-
-let currentUser=null;
-let currentDay=null;
-let calendarData={};
-
-
-// LOGIN
-function autoLogin(){
-  const u=localStorage.getItem('musicalUser');
-  const p=localStorage.getItem('musicalPass');
-  if(u && p && allowedUsers[u]) currentUser=u;
-  updateSessionUI();
-}
-
-function updateSessionUI(){
-  if(currentUser){
-    sessionBar.innerHTML = `${allowedUsers[currentUser]} ${currentUser}
-    <button id="logoutBtnTop" onclick="logout()">Salir</button>`;
-  } else sessionBar.innerHTML="No login";
-}
-
-function logout(){
-  localStorage.clear();
-  currentUser=null;
-  updateSessionUI();
-}
-
-
-// CALENDARIO
-for(let i=1;i<=dias;i++){
-  const d=document.createElement('div');
-  d.className='day';
-  d.id='day_'+i;
-  d.onclick=()=>openModal(i);
-  calendar.appendChild(d);
-}
-
-
-// LOAD FIRESTORE
-async function loadCalendarData(){
-  const snapshot=await db.collection('calendar').get();
-  snapshot.forEach(doc=>{
-    calendarData[doc.id]=doc.data().songs||[];
-  });
-  for(let i=1;i<=dias;i++) updateDayStatus(i);
-}
-
-
-// OPEN
-function openModal(day){
-  if(day>today) return;
-  currentDay=day;
-
-  document.getElementById('dayTitle').innerText = dayMessages[day] || ("Día "+day);
-
-  if(currentUser){
-    username.style.display='none';
-    password.style.display='none';
-  } else {
-    username.style.display='block';
-    password.style.display='block';
   }
 
-  modal.style.display='flex';
-  loadSong();
-
-  history.pushState({modal:true}, '');
 }
 
 
-// CLOSE
-function closeModal(){ modal.style.display='none'; }
+// ============================================================
+// CARGAR POOL DE RETOS DESDE retos.json
+// ============================================================
 
-modal.addEventListener('click', e=>{
-  if(e.target===modal) closeModal();
-});
+async function cargarPoolRetos(){
 
-window.addEventListener('popstate', ()=>{
-  if(modal.style.display==='flex') closeModal();
-});
-
-window.addEventListener('keydown', e=>{
-  if(e.key==='Escape') closeModal();
-});
+  const response = await fetch('retos.json');
 
 
-// SPOTIFY
-function convert(link){
-  const m=link.match(/(track|album|playlist)[\\/|:]([a-zA-Z0-9]+)/);
-  if(m) return `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
-  return null;
-}
+  if(!response.ok){
 
+    throw new Error(
+      `No se pudo cargar retos.json (${response.status})`
+    );
 
-// SAVE
-async function saveSong(){
-
-  let name=currentUser;
-  let pass=localStorage.getItem('musicalPass');
-
-  if(!name){
-    name=username.value.trim();
-    pass=password.value.trim();
-
-    if(!allowedUsers[name]) return alert("Usuario no permitido");
-
-    const ref=db.collection('users').doc(name);
-    const u=await ref.get();
-
-    if(u.exists && u.data().password!==pass) return alert("Contraseña incorrecta");
-    if(!u.exists) await ref.set({password:pass});
-
-    localStorage.setItem('musicalUser',name);
-    localStorage.setItem('musicalPass',pass);
-
-    currentUser=name;
-    updateSessionUI();
   }
 
-  const embed=convert(spotifyLink.value.trim());
-  if(!embed) return alert("Link inválido");
 
-  const ref=db.collection('calendar').doc('day_'+currentDay);
-  const doc=await ref.get();
-  let songs=doc.exists ? doc.data().songs||[] : [];
+  poolRetos = await response.json();
 
-  if(songs.some(s=>s.name===name)) return alert("Ya enviaste");
-  if(songs.length>=2) return alert("Completo");
 
-  songs.push({name,link:embed});
-  await ref.set({songs});
+  if(!Array.isArray(poolRetos)){
 
-  calendarData['day_'+currentDay]=songs;
-  updateDayStatus(currentDay);
-  loadSong();
+    throw new Error(
+      "retos.json no contiene una lista válida."
+    );
+
+  }
+
+
+  console.log(
+    `📝 Pool cargado: ${poolRetos.length} retos.`
+  );
+
 }
 
 
-// LOAD SONGS
-function loadSong(){
+// ============================================================
+// MEZCLAR RETOS
+// ============================================================
 
-  const result=document.getElementById('result');
-  result.innerHTML='';
+function mezclar(array){
 
-  const songs=calendarData['day_'+currentDay] || [];
+  const copia = [...array];
 
-  if(songs.length===0){
-    result.innerHTML="Ninguno ha enviado nada todavía...";
+
+  // Fisher-Yates
+
+  for(
+    let i = copia.length - 1;
+    i > 0;
+    i--
+  ){
+
+    const j = Math.floor(
+      Math.random() * (i + 1)
+    );
+
+
+    [
+      copia[i],
+      copia[j]
+    ] = [
+      copia[j],
+      copia[i]
+    ];
+
+  }
+
+
+  return copia;
+
+}
+
+
+// ============================================================
+// GENERAR RETOS DEL MES
+// ============================================================
+
+function generarDayMessages(){
+
+  dayMessages = {};
+
+
+  if(poolRetos.length < dias){
+
+    throw new Error(
+      `No hay suficientes retos. ` +
+      `Hay ${poolRetos.length} y se necesitan ${dias}.`
+    );
+
+  }
+
+
+  // Mezclar el pool completo
+
+  const retosMezclados = mezclar(poolRetos);
+
+
+  // Elegir tantos como días tenga el mes
+
+  const retosDelMes = retosMezclados.slice(
+    0,
+    dias
+  );
+
+
+  // Crear dayMessages
+
+  for(let i = 1; i <= dias; i++){
+
+    dayMessages[i] =
+      retosDelMes[i - 1];
+
+  }
+
+
+  console.log(
+    `🎲 Seleccionados ${retosDelMes.length} retos.`
+  );
+
+  console.log(
+    "📋 Retos seleccionados:",
+    dayMessages
+  );
+
+}
+
+
+// ============================================================
+// BORRAR CALENDAR DE FIREBASE
+// ============================================================
+
+async function borrarCalendar(){
+
+  console.log(
+    "🗑️ Borrando calendario anterior..."
+  );
+
+
+  const snapshot = await db
+    .collection('calendar')
+    .get();
+
+
+  if(snapshot.empty){
+
+    console.log(
+      "ℹ️ Calendar ya estaba vacío."
+    );
+
     return;
   }
 
-  // comprobar si ya envió una canción del día
-  const userSubmitted = songs.some(s => s.name === currentUser);
 
-  songs.forEach(s=>{
+  // Firestore permite un máximo de 500 operaciones
+  // por batch. Nuestro calendario tendrá como máximo
+  // 31 documentos, así que cabe perfectamente.
 
-    // si ya envió -> ve todo
-    if(userSubmitted){
+  const batch = db.batch();
 
-      result.innerHTML += `
-      <div class="song-block">
-        <b>${s.name}</b>
-        <iframe src="${s.link}"
-        frameborder="0"
-        allowtransparency="true"
-        allow="encrypted-media"></iframe>
-      </div>`;
+
+  snapshot.forEach(doc => {
+
+    batch.delete(doc.ref);
+
+  });
+
+
+  await batch.commit();
+
+
+  console.log(
+    `🗑️ Se han borrado ${snapshot.size} documentos.`
+  );
+
+}
+
+
+// ============================================================
+// CREAR NUEVO CALENDARIO EN FIREBASE
+// ============================================================
+
+async function crearNuevoCalendar(){
+
+  console.log(
+    "📅 Creando nuevo calendario..."
+  );
+
+
+  const batch = db.batch();
+
+
+  for(let i = 1; i <= dias; i++){
+
+    const ref = db
+      .collection('calendar')
+      .doc('day_' + i);
+
+
+    batch.set(ref, {
+
+      reto: dayMessages[i],
+
+      songs: []
+
+    });
+
+  }
+
+
+  await batch.commit();
+
+
+  console.log(
+    `💾 Nuevo calendario guardado: ${dias} días.`
+  );
+
+}
+
+
+// ============================================================
+// GUARDAR MES ACTUAL
+// ============================================================
+
+async function marcarMesActual(){
+
+  const ref = db
+    .collection('config')
+    .doc('calendar');
+
+
+  await ref.set({
+
+    month: mesActual,
+    year: añoActual
+
+  });
+
+
+  cambioDeMes = false;
+
+
+  console.log(
+    `💾 Mes ${mesActual}/${añoActual} guardado.`
+  );
+
+  console.log(
+    "🔵 cambioDeMes = FALSE"
+  );
+
+}
+
+
+// ============================================================
+// PREPARAR NUEVO MES
+// ============================================================
+
+async function prepararNuevoMes(){
+
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    "🌙 PREPARANDO NUEVO MES"
+  );
+
+  console.log(
+    "========================================"
+  );
+
+
+  // ----------------------------------------------------------
+  // 1. Borrar calendario anterior
+  // ----------------------------------------------------------
+
+  await borrarCalendar();
+
+
+  // ----------------------------------------------------------
+  // 2. Cargar pool de retos
+  // ----------------------------------------------------------
+
+  await cargarPoolRetos();
+
+
+  // ----------------------------------------------------------
+  // 3. Randomizar y seleccionar retos
+  // ----------------------------------------------------------
+
+  generarDayMessages();
+
+
+  // ----------------------------------------------------------
+  // 4. Guardar selección en Firebase
+  // ----------------------------------------------------------
+
+  await crearNuevoCalendar();
+
+
+  // ----------------------------------------------------------
+  // 5. Guardar mes actual
+  // ----------------------------------------------------------
+
+  await marcarMesActual();
+
+
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    "✅ NUEVO MES PREPARADO"
+  );
+
+  console.log(
+    "========================================"
+  );
+
+}
+
+
+// ============================================================
+// LOGIN AUTOMÁTICO
+// ============================================================
+
+function autoLogin(){
+
+  const u = localStorage.getItem(
+    'musicalUser'
+  );
+
+  const p = localStorage.getItem(
+    'musicalPass'
+  );
+
+
+  if(
+    u &&
+    p &&
+    allowedUsers[u]
+  ){
+
+    currentUser = u;
+
+  }
+
+
+  updateSessionUI();
+
+}
+
+
+// ============================================================
+// ACTUALIZAR SESIÓN
+// ============================================================
+
+function updateSessionUI(){
+
+  if(currentUser){
+
+    sessionBar.innerHTML = `
+      ${allowedUsers[currentUser]} ${currentUser}
+
+      <button
+        id="logoutBtnTop"
+        onclick="logout()"
+      >
+        Salir
+      </button>
+    `;
+
+  } else {
+
+    sessionBar.innerHTML = "No login";
+
+  }
+
+}
+
+
+// ============================================================
+// LOGOUT
+// ============================================================
+
+function logout(){
+
+  localStorage.clear();
+
+  currentUser = null;
+
+  updateSessionUI();
+
+}
+
+
+// ============================================================
+// CREAR CALENDARIO HTML
+// ============================================================
+
+function crearCalendario(){
+
+  calendar.innerHTML = '';
+
+
+  for(let i = 1; i <= dias; i++){
+
+    const d = document.createElement('div');
+
+    d.className = 'day';
+
+    d.id = 'day_' + i;
+
+    d.onclick = () => openModal(i);
+
+    calendar.appendChild(d);
+
+  }
+
+}
+
+
+// ============================================================
+// CARGAR CALENDARIO DESDE FIREBASE
+// ============================================================
+
+async function loadCalendarData(){
+
+  calendarData = {};
+
+
+  const snapshot = await db
+    .collection('calendar')
+    .get();
+
+
+  snapshot.forEach(doc => {
+
+    calendarData[doc.id] = doc.data();
+
+  });
+
+
+  // ----------------------------------------------------------
+  // Crear dayMessages usando Firebase
+  // ----------------------------------------------------------
+
+  dayMessages = {};
+
+
+  for(let i = 1; i <= dias; i++){
+
+    const dayData =
+      calendarData['day_' + i];
+
+
+    if(dayData){
+
+      dayMessages[i] =
+        dayData.reto || `Reto del día ${i}`;
 
     }
 
-    // si NO envió -> solo ve la suya
+  }
+
+
+  // ----------------------------------------------------------
+  // Actualizar calendario visual
+  // ----------------------------------------------------------
+
+  for(let i = 1; i <= dias; i++){
+
+    updateDayStatus(i);
+
+  }
+
+
+  console.log(
+    "📥 Calendario cargado desde Firebase."
+  );
+
+}
+
+
+// ============================================================
+// ABRIR MODAL
+// ============================================================
+
+function openModal(day){
+
+  if(day > hoy) return;
+
+
+  currentDay = day;
+
+
+  document.getElementById(
+    'dayTitle'
+  ).innerText =
+    dayMessages[day] ||
+    ("Día " + day);
+
+
+  if(currentUser){
+
+    username.style.display = 'none';
+
+    password.style.display = 'none';
+
+  } else {
+
+    username.style.display = 'block';
+
+    password.style.display = 'block';
+
+  }
+
+
+  modal.style.display = 'flex';
+
+
+  loadSong();
+
+
+  history.pushState(
+    {modal:true},
+    ''
+  );
+
+}
+
+
+// ============================================================
+// CERRAR MODAL
+// ============================================================
+
+function closeModal(){
+
+  modal.style.display = 'none';
+
+}
+
+
+modal.addEventListener(
+  'click',
+  e => {
+
+    if(e.target === modal){
+
+      closeModal();
+
+    }
+
+  }
+);
+
+
+window.addEventListener(
+  'popstate',
+  () => {
+
+    if(modal.style.display === 'flex'){
+
+      closeModal();
+
+    }
+
+  }
+);
+
+
+window.addEventListener(
+  'keydown',
+  e => {
+
+    if(e.key === 'Escape'){
+
+      closeModal();
+
+    }
+
+  }
+);
+
+
+// ============================================================
+// SPOTIFY
+// ============================================================
+
+function convert(link){
+
+  const m = link.match(
+    /(track|album|playlist)[\\\/|:]([a-zA-Z0-9]+)/
+  );
+
+
+  if(m){
+
+    return `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
+
+  }
+
+
+  return null;
+
+}
+
+
+// ============================================================
+// GUARDAR CANCIÓN
+// ============================================================
+
+async function saveSong(){
+
+  let name = currentUser;
+
+  let pass =
+    localStorage.getItem('musicalPass');
+
+
+  // ----------------------------------------------------------
+  // Login si no existe sesión
+  // ----------------------------------------------------------
+
+  if(!name){
+
+    name =
+      username.value.trim();
+
+    pass =
+      password.value.trim();
+
+
+    if(!allowedUsers[name]){
+
+      return alert(
+        "Usuario no permitido"
+      );
+
+    }
+
+
+    const ref =
+      db.collection('users').doc(name);
+
+
+    const u =
+      await ref.get();
+
+
+    if(
+      u.exists &&
+      u.data().password !== pass
+    ){
+
+      return alert(
+        "Contraseña incorrecta"
+      );
+
+    }
+
+
+    if(!u.exists){
+
+      await ref.set({
+        password: pass
+      });
+
+    }
+
+
+    localStorage.setItem(
+      'musicalUser',
+      name
+    );
+
+    localStorage.setItem(
+      'musicalPass',
+      pass
+    );
+
+
+    currentUser = name;
+
+    updateSessionUI();
+
+  }
+
+
+  // ----------------------------------------------------------
+  // Comprobar Spotify
+  // ----------------------------------------------------------
+
+  const embed =
+    convert(
+      spotifyLink.value.trim()
+    );
+
+
+  if(!embed){
+
+    return alert(
+      "Link inválido"
+    );
+
+  }
+
+
+  // ----------------------------------------------------------
+  // Documento del día
+  // ----------------------------------------------------------
+
+  const ref =
+    db.collection('calendar')
+      .doc('day_' + currentDay);
+
+
+  const doc =
+    await ref.get();
+
+
+  if(!doc.exists){
+
+    return alert(
+      "Este día no existe en el calendario."
+    );
+
+  }
+
+
+  const data = doc.data();
+
+
+  let songs =
+    data.songs || [];
+
+
+  // ----------------------------------------------------------
+  // Comprobar si ya envió
+  // ----------------------------------------------------------
+
+  if(
+    songs.some(
+      s => s.name === name
+    )
+  ){
+
+    return alert(
+      "Ya enviaste"
+    );
+
+  }
+
+
+  // ----------------------------------------------------------
+  // Comprobar límite
+  // ----------------------------------------------------------
+
+  if(songs.length >= 2){
+
+    return alert(
+      "Completo"
+    );
+
+  }
+
+
+  // ----------------------------------------------------------
+  // Añadir canción
+  // ----------------------------------------------------------
+
+  songs.push({
+
+    name: name,
+
+    link: embed
+
+  });
+
+
+  await ref.set({
+
+    reto: data.reto,
+
+    songs: songs
+
+  });
+
+
+  // Actualizar memoria local
+
+  calendarData[
+    'day_' + currentDay
+  ] = {
+
+    reto: data.reto,
+
+    songs: songs
+
+  };
+
+
+  updateDayStatus(
+    currentDay
+  );
+
+
+  loadSong();
+
+}
+
+
+// ============================================================
+// CARGAR CANCIONES
+// ============================================================
+
+function loadSong(){
+
+  const result =
+    document.getElementById('result');
+
+
+  result.innerHTML = '';
+
+
+  const data =
+    calendarData[
+      'day_' + currentDay
+    ] || {};
+
+
+  const songs =
+    data.songs || [];
+
+
+  if(songs.length === 0){
+
+    result.innerHTML =
+      "Ninguno ha enviado nada todavía...";
+
+    return;
+
+  }
+
+
+  // ----------------------------------------------------------
+  // Comprobar si el usuario ya envió
+  // ----------------------------------------------------------
+
+  const userSubmitted =
+    songs.some(
+      s => s.name === currentUser
+    );
+
+
+  songs.forEach(s => {
+
+
+    // --------------------------------------------------------
+    // Usuario ya envió -> puede ver todo
+    // --------------------------------------------------------
+
+    if(userSubmitted){
+
+      result.innerHTML += `
+        <div class="song-block">
+
+          <b>${s.name}</b>
+
+          <iframe
+            src="${s.link}"
+            frameborder="0"
+            allowtransparency="true"
+            allow="encrypted-media">
+          </iframe>
+
+        </div>
+      `;
+
+    }
+
+
+    // --------------------------------------------------------
+    // Usuario todavía no envió
+    // --------------------------------------------------------
+
     else {
 
       if(s.name === currentUser){
 
         result.innerHTML += `
-        <div class="song-block">
-          <b>${s.name}</b>
-          <iframe src="${s.link}"
-          frameborder="0"
-          allowtransparency="true"
-          allow="encrypted-media"></iframe>
-        </div>`;
+          <div class="song-block">
+
+            <b>${s.name}</b>
+
+            <iframe
+              src="${s.link}"
+              frameborder="0"
+              allowtransparency="true"
+              allow="encrypted-media">
+            </iframe>
+
+          </div>
+        `;
 
       } else {
 
         result.innerHTML += `
-        <div class="song-block">
-          <b>${s.name}</b><br>
-          🔒 Todavía no has enviado tu canción
-        </div>`;
+          <div class="song-block">
+
+            <b>${s.name}</b><br>
+
+            🔒 Todavía no has enviado
+            tu canción
+
+          </div>
+        `;
 
       }
 
@@ -410,37 +1200,196 @@ function loadSong(){
 }
 
 
-// UPDATE DAY
+// ============================================================
+// ACTUALIZAR ESTADO DEL DÍA
+// ============================================================
+
 function updateDayStatus(day){
-  const el=document.getElementById('day_'+day);
-  const songs=calendarData['day_'+day]||[];
 
-  let title = (day>today) ? "🔒" : (dayMessages[day] || day);
+  const el =
+    document.getElementById(
+      'day_' + day
+    );
 
-  el.innerHTML = `<div>${title}</div>`;
 
-  // iconos usuarios
-  let avatars='<div class="avatars">';
-  Object.keys(allowedUsers).forEach(u=>{
-    avatars += `${allowedUsers[u]} ${songs.some(s=>s.name===u)?'✔️':'❌'}`;
+  if(!el) return;
+
+
+  const data =
+    calendarData[
+      'day_' + day
+    ] || {};
+
+
+  const songs =
+    data.songs || [];
+
+
+  let title =
+    (day > hoy)
+      ? "🔒"
+      : (
+          data.reto ||
+          dayMessages[day] ||
+          day
+        );
+
+
+  el.innerHTML = `
+    <div>${title}</div>
+  `;
+
+
+  // ----------------------------------------------------------
+  // Iconos de usuarios
+  // ----------------------------------------------------------
+
+  let avatars =
+    '<div class="avatars">';
+
+
+  Object.keys(
+    allowedUsers
+  ).forEach(u => {
+
+    avatars += `
+      ${allowedUsers[u]}
+      ${songs.some(
+        s => s.name === u
+      ) ? '✔️' : '❌'}
+    `;
+
   });
-  avatars+='</div>';
+
+
+  avatars += '</div>';
+
 
   el.innerHTML += avatars;
 
-  el.classList.remove('empty','partial','full');
 
-  if(songs.length===0) el.classList.add('empty');
-  else if(songs.length===1) el.classList.add('partial');
-  else el.classList.add('full');
+  // ----------------------------------------------------------
+  // Estado visual
+  // ----------------------------------------------------------
 
-  if(day>today) el.classList.add('locked');
+  el.classList.remove(
+    'empty',
+    'partial',
+    'full',
+    'locked'
+  );
+
+
+  if(songs.length === 0){
+
+    el.classList.add('empty');
+
+  }
+  else if(songs.length === 1){
+
+    el.classList.add('partial');
+
+  }
+  else {
+
+    el.classList.add('full');
+
+  }
+
+
+  if(day > hoy){
+
+    el.classList.add('locked');
+
+  }
+
 }
 
 
-// INIT
-autoLogin();
-loadCalendarData();
+// ============================================================
+// INICIALIZACIÓN
+// ============================================================
+
+async function init(){
+
+  try {
+
+    console.log(
+      `📅 Fecha actual: ${hoy}/${mesActual}/${añoActual}`
+    );
+
+    console.log(
+      `📆 Días de este mes: ${dias}`
+    );
+
+
+    // --------------------------------------------------------
+    // Login
+    // --------------------------------------------------------
+
+    autoLogin();
+
+
+    // --------------------------------------------------------
+    // Comprobar cambio de mes
+    // --------------------------------------------------------
+
+    await comprobarCambioDeMes();
+
+
+    // --------------------------------------------------------
+    // SI ES UN MES NUEVO
+    // --------------------------------------------------------
+
+    if(cambioDeMes){
+
+      await prepararNuevoMes();
+
+    }
+
+
+    // --------------------------------------------------------
+    // Crear calendario HTML
+    // --------------------------------------------------------
+
+    crearCalendario();
+
+
+    // --------------------------------------------------------
+    // Cargar calendario desde Firebase
+    // --------------------------------------------------------
+
+    await loadCalendarData();
+
+
+    console.log(
+      "✅ Inicialización terminada."
+    );
+
+
+  } catch(error) {
+
+    console.error(
+      "❌ ERROR DURANTE LA INICIALIZACIÓN:",
+      error
+    );
+
+
+    alert(
+      "Se produjo un error al cargar el calendario. " +
+      "Revisa la consola del navegador (F12)."
+    );
+
+  }
+
+}
+
+
+// ============================================================
+// INICIAR
+// ============================================================
+
+init();
 
 </script>
 
